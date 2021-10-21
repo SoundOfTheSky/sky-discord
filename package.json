@@ -1,0 +1,22 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node --trace-warnings src/index.js",
+    "updateData": "node src/update.js"
+  },
+  "dependencies": {
+    "@discordjs/opus": "latest",
+    "discord.js": "latest",
+    "ffmpeg-static": "latest",
+    "pg": "latest"
+  },
+  "devDependencies": {
+    "eslint": "latest",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-prettier": "latest",
+    "prettier": "la"
+  }
+}
