@@ -8,16 +8,14 @@ module.exports = async client => {
       } catch {}
     });
   client.getGuildVC = id => client.voice.connections.get(id);
-  client.emojiCodes = require('./emojiCodes.json');
   client.managerRequest = code =>
     new Promise(r => {
-      const id = Math.random();
+      const id = Math.random().toString(36).slice(2);
       client.shard.send([id, code]);
       function onMessage(data) {
-        if (Array.isArray(data) && data[0] === id) {
-          process.removeListener('message', onMessage);
-          r(data[1]);
-        }
+        if (data[0] !== id) return;
+        process.removeListener('message', onMessage);
+        r(data[1]);
       }
       process.on('message', onMessage);
     });
