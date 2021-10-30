@@ -1,6 +1,16 @@
-const Discord = require('discord.js');
-const fs = require('fs/promises');
-const config = require('./config.json');
+import Discord from 'discord.js';
+import fs from 'fs/promises';
+import config from './config.json';
+declare module 'discord.js' {
+  export interface Client {
+    commands: Discord.Collection<unknown, Command>;
+  }
+  export interface Command {
+    name: string;
+    description: string;
+    execute: (message: Message, args: string[]) => void;
+  }
+}
 const client = new Discord.Client({
   intents: [
     Discord.Intents.FLAGS.GUILDS,
@@ -56,8 +66,13 @@ async function getGuildPreferences(guild) {
 }
 client.once('ready', async () => {
   console.log('Logged in!');
+  client.commands = new Discord.Collection();
   // Load commands
-  client.commands = (await fs.readdir(__dirname + '/commands')).map(module => require('./commands/' + module));
+  for (const cmd of await Promise.all(
+    (await fs.readdir(__dirname + '/commands')).map(module => import('./commands/' + module)),
+  )) {
+    client.commands.set(command.data.name, command);
+  }
   client.on('messageCreate', async msg => {
     if (msg.author.bot) return;
     try {

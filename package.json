@@ -1,22 +1,32 @@
 {
-  "name": "discord-bot",
+  "name": "sky-discord",
   "version": "1.0.0",
-  "main": "index.js",
   "license": "MIT",
-  "scripts": {
-    "start": "node --trace-warnings src/index.js",
-    "updateData": "node src/update.js"
-  },
   "dependencies": {
+    "@discordjs/builders": "^0.6.0",
     "@discordjs/opus": "latest",
+    "@discordjs/rest": "^0.1.0-canary.0",
+    "discord-api-types": "^0.23.1",
     "discord.js": "latest",
     "ffmpeg-static": "latest",
-    "pg": "latest"
+    "pg": "latest",
+    "tslib": "latest"
   },
   "devDependencies": {
+    "@types/node": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
     "eslint": "latest",
     "eslint-config-prettier": "latest",
     "eslint-plugin-prettier": "latest",
-    "prettier": "la"
+    "prettier": "latest",
+    "typescript": "latest"
+  },
+  "scripts": {
+    "lint": "prettier -c \"**/*{.js,.json,.ts}\" && eslint \"src/**/*{.js,.ts}\"",
+    "lint:fix": "prettier -w \"**/*{.js,.json,.ts}\" && eslint \"src/**/*{.js,.ts}\" --fix",
+    "dev": "node scripts/dev",
+    "build": "node scripts/build",
+    "start": "node dist"
   }
 }
