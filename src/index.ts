@@ -21,6 +21,6 @@ async function updateStatus() {
     (a, b) => (a as number) + (b as number),
     0,
   );
-  manager.shards.first().eval(`client.user.setActivity('@ on ${amount} servers', {type: 'LISTENING'});`);
+  manager.shards.first()?.eval(`client.user.setActivity('@ on ${amount} servers', {type: 'LISTENING'});`);
 }
 main();
