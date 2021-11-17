@@ -3,10 +3,7 @@
   "version": "1.0.0",
   "license": "MIT",
   "dependencies": {
-    "@discordjs/builders": "^0.6.0",
     "@discordjs/opus": "latest",
-    "@discordjs/rest": "^0.1.0-canary.0",
-    "discord-api-types": "^0.23.1",
     "discord.js": "latest",
     "ffmpeg-static": "latest",
     "pg": "latest",
