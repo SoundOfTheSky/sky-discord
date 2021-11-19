@@ -15,7 +15,6 @@ declare global {
 }
 export type GuildPreferences = {
   Prefix: string;
-  'Delete messages': boolean;
 };
 export type Command = ChatInputApplicationCommandData & {
   handler: (data: {

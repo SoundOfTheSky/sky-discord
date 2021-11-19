@@ -7,11 +7,11 @@ const cmd: Command = {
       name: 'prefix',
       description: 'Новый перфикс',
       type: 'STRING',
+      required: true,
     },
   ],
   async handler(data) {
     const guild = data.interaction ? data.interaction.guild : data.msg!.guild;
-    console.log(!guild, data.options.length === 0, typeof data.options[0] !== 'string', data.options[0].length);
     if (
       !guild ||
       data.options.length === 0 ||

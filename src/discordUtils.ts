@@ -41,16 +41,21 @@ function parsePreferences(t: string): GuildPreferences {
 }
 function stringifyPreferences(p: GuildPreferences) {
   return Object.entries(p)
-    .map(op => op[0] + ': ' + (op[1] === true ? 'yes' : op[1] === false ? 'no' : op[1]))
+    .map(
+      op =>
+        op[0] +
+        ': ' +
+        ((op[1] as unknown as boolean) === true ? 'yes' : (op[1] as unknown as boolean) === false ? 'no' : op[1]),
+    )
     .join('\n');
 }
 async function getGuildPreferences(guild: Guild) {
-  const defaultPreferencesMessage = 'Prefix: Sky\nDelete messages: yes';
+  const defaultPreferencesMessage = 'Prefix: randobot';
   let preferencesChannel: TextChannel = guild.channels.cache.find(
-    c => c.type === 'GUILD_TEXT' && c.name === 'sky-preferences',
+    c => c.type === 'GUILD_TEXT' && c.name === 'randobot-preferences',
   ) as TextChannel;
   if (!preferencesChannel) {
-    preferencesChannel = await guild.channels.create('sky-preferences', {
+    preferencesChannel = await guild.channels.create('randobot-preferences', {
       permissionOverwrites: [
         {
           type: 'role',
@@ -80,7 +85,7 @@ async function getGuildPreferences(guild: Guild) {
 }
 async function updateGuildPreferences(guild: Guild, preferences: GuildPreferences) {
   const preferencesChannel: TextChannel = guild.channels.cache.find(
-    c => c.type === 'GUILD_TEXT' && c.name === 'sky-preferences',
+    c => c.type === 'GUILD_TEXT' && c.name === 'randobot-preferences',
   ) as TextChannel;
   const lastMsg = await preferencesChannel.messages.fetch(preferencesChannel.lastMessageId!);
   await lastMsg.delete().catch(() => {});

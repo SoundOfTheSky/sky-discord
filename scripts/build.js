@@ -14,8 +14,7 @@ function getTSConfig() {
     throw new Error(ts.formatDiagnostics(convertResult.errors, formatHost));
   return convertResult.options;
 }
-async function compile() {
-  await fs.rm(DIST_PATH, { recursive: true, force: true });
+async function compile(entryFile = 'index.ts') {
   const config = getTSConfig();
   const host = ts.createCompilerHost(config);
   on(
@@ -24,7 +23,7 @@ async function compile() {
     path => (lastFilePath = path),
     t => lastFilePath.endsWith('.ts') && resolvePathAliases(SRC_PATH, lastFilePath, t),
   );
-  const program = ts.createProgram([path.join(SRC_PATH, 'index.ts')], config, host);
+  const program = ts.createProgram([path.join(SRC_PATH, entryFile)], config, host);
   const emitResult = program.emit();
   const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
   allDiagnostics.forEach(diagnostic => {
@@ -38,7 +37,10 @@ async function compile() {
       );
     } else console.log(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
   });
-  process.exit();
 }
-
-compile();
+(async () => {
+  await fs.rm(DIST_PATH, { recursive: true, force: true });
+  await compile();
+  await compile('bot.ts');
+  process.exit();
+})();
