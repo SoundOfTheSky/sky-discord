@@ -25,5 +25,8 @@
     "dev": "node scripts/dev",
     "build": "node scripts/build",
     "start": "node dist"
+  },
+  "engines": {
+    "node": "16.x"
   }
 }
