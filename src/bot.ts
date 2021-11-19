@@ -19,11 +19,9 @@ import './discordUtils';
 
 client.once('ready', async () => {
   console.log('Logged in!');
-  for (const cmd of Object.values(commands)) {
-    client.guilds.cache.each(guild => {
-      guild.commands.create(cmd);
-    });
-  }
+  client.guilds.cache.each(guild => {
+    guild.commands.set(Object.values(commands));
+  });
 });
 client.commands = new Discord.Collection();
 client.on('interactionCreate', async interaction => {
@@ -39,12 +37,12 @@ client.on('interactionCreate', async interaction => {
     await interaction.deferReply({
       ephemeral: true,
     });
-    await cmd.handler({
+    const answer = await cmd.handler({
       guildPreferences,
       options,
       interaction,
     });
-    await interaction.editReply('👌');
+    await interaction.editReply(answer ?? '👌');
   }
 });
 client.on('messageCreate', async msg => {
@@ -95,16 +93,14 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
         newMember.guild.channels.cache.find(c => c.parentId === channel.parentId)!.id !== channel.id
       )
         return;
-      let userLimit;
-      const bracketI = category.name.indexOf('[');
-      if (bracketI !== -1 && /^.+\[\d+\]$/.test(category.name)) userLimit = +category.name.slice(bracketI + 1, -1);
       const newChannel = await newMember.guild.channels.create(
-        category.name.slice(1, bracketI === -1 ? undefined : bracketI) +
-          ' #' +
-          newMember.guild.channels.cache.filter(c => c.parentId === category.id).size,
+        category.name.slice(1) + ' #' + newMember.guild.channels.cache.filter(c => c.parentId === category.id).size,
         {
           type: 'GUILD_VOICE',
-          userLimit,
+          bitrate: channel.bitrate,
+          userLimit: channel.userLimit,
+          rtcRegion: channel.rtcRegion!,
+          permissionOverwrites: channel.permissionOverwrites.cache.toJSON(),
           parent: category,
         },
       );

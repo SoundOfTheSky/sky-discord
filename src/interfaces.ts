@@ -22,5 +22,5 @@ export type Command = ChatInputApplicationCommandData & {
     msg?: Message;
     interaction?: Interaction;
     options: any[];
-  }) => Promise<void>;
+  }) => Promise<string | void>;
 };
