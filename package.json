@@ -5,11 +5,13 @@
   "dependencies": {
     "@discordjs/opus": "latest",
     "discord.js": "latest",
+    "express": "^4.17.1",
     "ffmpeg-static": "latest",
     "pg": "latest",
     "tslib": "latest"
   },
   "devDependencies": {
+    "@types/express": "^4.17.13",
     "@types/node": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",

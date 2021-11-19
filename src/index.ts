@@ -1,5 +1,11 @@
 import { ShardingManager } from 'discord.js';
+import Express from 'express';
 import config from './config.json';
+const express = Express();
+express.listen(process.env.PORT || 3000);
+express.get('', (req, res) => {
+  res.send('ok!');
+});
 let manager: ShardingManager;
 async function main() {
   manager = new ShardingManager(__dirname + '/bot.js', {
