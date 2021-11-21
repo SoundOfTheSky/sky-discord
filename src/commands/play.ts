@@ -1,4 +1,4 @@
-import { Command } from '../interfaces';
+/*import { Command } from '../interfaces';
 import ytdl from 'ytdl-core';
 import { GuildMember } from 'discord.js';
 import { getVoiceConnection, joinVoiceChannel,AudioResource, } from '@discordjs/voice';
@@ -56,3 +56,4 @@ const cmd: Command = {
   },
 };
 export default cmd;
+*/

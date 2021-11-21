@@ -89,34 +89,33 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
     if (channel.parentId) {
       const category = newMember.guild.channels.cache.get(channel.parentId)! as CategoryChannel;
       if (
-        !category.name.startsWith('!') ||
-        newMember.guild.channels.cache.find(c => c.parentId === channel.parentId)!.id !== channel.id
-      )
-        return;
-      const newChannel = await newMember.guild.channels.create(
-        category.name.slice(1) + ' #' + newMember.guild.channels.cache.filter(c => c.parentId === category.id).size,
-        {
-          type: 'GUILD_VOICE',
-          bitrate: channel.bitrate,
-          userLimit: channel.userLimit,
-          rtcRegion: channel.rtcRegion!,
-          permissionOverwrites: channel.permissionOverwrites.cache.toJSON(),
-          parent: category,
-        },
-      );
-      await newMember.setChannel(newChannel);
+        category.name.startsWith('!') &&
+        newMember.guild.channels.cache.find(c => c.parentId === channel.parentId)!.id === channel.id
+      ) {
+        const newChannel = await newMember.guild.channels.create(
+          category.name.slice(1) + ' #' + newMember.guild.channels.cache.filter(c => c.parentId === category.id).size,
+          {
+            type: 'GUILD_VOICE',
+            bitrate: channel.bitrate,
+            userLimit: channel.userLimit,
+            rtcRegion: channel.rtcRegion!,
+            permissionOverwrites: channel.permissionOverwrites.cache.toJSON(),
+            parent: category,
+          },
+        );
+        await newMember.setChannel(newChannel);
+      }
     }
   }
   if (oldMember.channelId) {
     const channel = newMember.guild.channels.cache.get(oldMember.channelId) as VoiceChannel;
     if (
-      !channel.parentId ||
-      channel.members.size !== 0 ||
-      !newMember.guild.channels.cache.get(channel.parentId)!.name.startsWith('!') ||
-      newMember.guild.channels.cache.find(c => c.parentId === channel.parentId)!.id === channel.id
+      channel.parentId &&
+      channel.members.size === 0 &&
+      newMember.guild.channels.cache.get(channel.parentId)!.name.startsWith('!') &&
+      newMember.guild.channels.cache.find(c => c.parentId === channel.parentId)!.id !== channel.id
     )
-      return;
-    await channel.delete();
+      await channel.delete();
   }
 });
 client.on('guildCreate', async guild => {
