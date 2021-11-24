@@ -1,5 +1,6 @@
 import { Guild, MessageOptions, MessagePayload, TextChannel, Permissions } from 'discord.js';
 import { GuildPreferences } from './interfaces';
+import Player from './player';
 
 const sendMsg = async (channel: TextChannel, data: string | MessagePayload | MessageOptions, deleteAfter?: number) =>
   new Promise(async r => {
@@ -100,6 +101,9 @@ declare module 'discord.js' {
     stringifyPreferences: typeof stringifyPreferences;
     getGuildPreferences: typeof getGuildPreferences;
     updateGuildPreferences: typeof updateGuildPreferences;
+  }
+  export interface Guild {
+    player?: Player;
   }
 }
 global.client.sendMsg = sendMsg;

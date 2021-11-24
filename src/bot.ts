@@ -79,7 +79,7 @@ client.on('messageCreate', async msg => {
 
     setTimeout(() => {
       msg.delete().catch(() => {});
-    }, 30000);
+    }, 2000);
   }
 });
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
@@ -92,18 +92,20 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
         category.name.startsWith('!') &&
         newMember.guild.channels.cache.find(c => c.parentId === channel.parentId)!.id === channel.id
       ) {
-        const newChannel = await newMember.guild.channels.create(
-          category.name.slice(1) + ' #' + newMember.guild.channels.cache.filter(c => c.parentId === category.id).size,
-          {
-            type: 'GUILD_VOICE',
-            bitrate: channel.bitrate,
-            userLimit: channel.userLimit,
-            rtcRegion: channel.rtcRegion!,
-            permissionOverwrites: channel.permissionOverwrites.cache.toJSON(),
-            parent: category,
-          },
-        );
-        await newMember.setChannel(newChannel);
+        try {
+          const newChannel = await newMember.guild.channels.create(
+            category.name.slice(1) + ' #' + newMember.guild.channels.cache.filter(c => c.parentId === category.id).size,
+            {
+              type: 'GUILD_VOICE',
+              bitrate: channel.bitrate,
+              userLimit: channel.userLimit,
+              rtcRegion: channel.rtcRegion!,
+              permissionOverwrites: channel.permissionOverwrites.cache.toJSON(),
+              parent: category,
+            },
+          );
+          await newMember.setChannel(newChannel);
+        } catch (e) {}
       }
     }
   }
@@ -115,7 +117,7 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
       newMember.guild.channels.cache.get(channel.parentId)!.name.startsWith('!') &&
       newMember.guild.channels.cache.find(c => c.parentId === channel.parentId)!.id !== channel.id
     )
-      await channel.delete();
+      await channel.delete().catch(() => {});
   }
 });
 client.on('guildCreate', async guild => {

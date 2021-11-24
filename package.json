@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "license": "MIT",
   "dependencies": {
-    "@discordjs/opus": "^0.5.3",
-    "@discordjs/voice": "^0.7.5",
+    "@discordjs/opus": "latest",
+    "@discordjs/voice": "latest",
     "discord.js": "latest",
-    "express": "^4.17.1",
+    "express": "latest",
     "ffmpeg-static": "latest",
     "tslib": "latest",
-    "tweetnacl": "^1.0.3",
-    "ytdl-core": "^4.9.1"
+    "tweetnacl": "latest",
+    "youtube-dl-exec": "latest",
+    "ytdl-core": "latest"
   },
   "devDependencies": {
     "@types/express": "latest",

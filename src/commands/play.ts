@@ -1,37 +1,7 @@
-/*import { Command } from '../interfaces';
-import ytdl from 'ytdl-core';
-import { GuildMember } from 'discord.js';
-import { getVoiceConnection, joinVoiceChannel,AudioResource, } from '@discordjs/voice';
-function createAudioResource(): Promise<AudioResource<Track>> {
-  return new Promise((resolve, reject) => {
-    const process = ytdl(
-      this.url,
-      {
-        o: '-',
-        q: '',
-        f: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
-        r: '100K',
-      },
-      { stdio: ['ignore', 'pipe', 'ignore'] },
-    );
-    if (!process.stdout) {
-      reject(new Error('No stdout'));
-      return;
-    }
-    const stream = process.stdout;
-    const onError = (error: Error) => {
-      if (!process.killed) process.kill();
-      stream.resume();
-      reject(error);
-    };
-    process
-      .once('spawn', () => {
-        demuxProbe(stream)
-          .then((probe: { stream: any; type: any; }) => resolve(createAudioResource(probe.stream, { metadata: this, inputType: probe.type })))
-          .catch(onError);
-      })
-      .catch(onError);
-  });
+import { Command } from '../interfaces';
+import { GuildMember, TextChannel, VoiceChannel } from 'discord.js';
+import Player from '@/player';
+import { Track } from '@/track';
 const cmd: Command = {
   name: 'play',
   description: 'Запустить музяку',
@@ -44,16 +14,19 @@ const cmd: Command = {
     },
   ],
   async handler(data) {
-    console.log(data.options[0]);
-    const guild = data.interaction ? data.interaction.guild! : data.msg!.guild!;
-    const member = data.interaction ? (data.interaction.member as GuildMember) : data.msg!.member!;
-    if (!member.voice.channel) return 'Ало! Куда присоединяться? Сначала сам зайди в канал.';
-    const vc = await joinVoiceChannel({
-      guildId: guild.id,
-      channelId: member.voice.channel.id,
-      adapterCreator: guild.voiceAdapterCreator,
-    });
+    const url = data.options[0] as string;
+    const member = data.interaction ? data.interaction.member : data.msg!.member!;
+    const textChannel = (data.interaction ? data.interaction.channel! : data.msg!.channel!) as TextChannel;
+    if (!(member instanceof GuildMember)) return 'Мальчик, мы работаем только на сервере.';
+    if (!(member.voice.channel instanceof VoiceChannel)) return 'Ало? Куда присоединяться? Сначала сам зайди в канал.';
+    if (!url.startsWith('https://youtube.com/v?')) return 'Музяка пока поддерживается только ЮТуба.';
+    if (!member.guild.player) {
+      new Player(member.guild, member.voice.channel, textChannel);
+      await member.guild.player!.init();
+    }
+    member.guild.player!.queue.push(await Track.fromYouTube(data.options[0]));
+    member.guild.player!.processQueue();
+    return;
   },
 };
 export default cmd;
-*/
