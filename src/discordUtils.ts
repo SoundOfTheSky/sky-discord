@@ -1,13 +1,7 @@
-import { Guild, MessageOptions, MessagePayload, TextChannel, Permissions } from 'discord.js';
+import { Guild, TextChannel, Permissions } from 'discord.js';
 import { GuildPreferences } from './interfaces';
 import Player from './player';
 
-const sendMsg = async (channel: TextChannel, data: string | MessagePayload | MessageOptions, deleteAfter?: number) =>
-  new Promise(async r => {
-    const msg = await channel.send(data).catch(() => {});
-    r(msg);
-    if (deleteAfter && deleteAfter > 0) setTimeout(() => msg!.delete().catch(() => {}), deleteAfter);
-  });
 const managerRequest = (code: string) =>
   new Promise(r => {
     const id = Math.random().toString(36).slice(2);
@@ -79,7 +73,7 @@ async function getGuildPreferences(guild: Guild) {
   let preferences = parsePreferences(lastMsg.content);
   if (preferences.Prefix.length === 0 || preferences.Prefix.length > 64) {
     await preferencesChannel.send(defaultPreferencesMessage);
-    await lastMsg.delete();
+    await lastMsg.delete().catch(() => {});
     preferences = parsePreferences(defaultPreferencesMessage);
   }
   return preferences;
@@ -94,7 +88,6 @@ async function updateGuildPreferences(guild: Guild, preferences: GuildPreference
 }
 declare module 'discord.js' {
   export interface Client {
-    sendMsg: typeof sendMsg;
     managerRequest: typeof managerRequest;
     strToEmojis: typeof strToEmojis;
     parsePreferences: typeof parsePreferences;
@@ -106,7 +99,6 @@ declare module 'discord.js' {
     player?: Player;
   }
 }
-global.client.sendMsg = sendMsg;
 global.client.managerRequest = managerRequest;
 global.client.strToEmojis = strToEmojis;
 global.client.parsePreferences = parsePreferences;

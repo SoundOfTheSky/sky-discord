@@ -1,4 +1,4 @@
-import Discord, { ChatInputApplicationCommandData, Interaction, Message } from 'discord.js';
+import Discord, { ChatInputApplicationCommandData, CommandInteraction, Message } from 'discord.js';
 declare module 'discord.js' {
   export interface Client {
     commands: Discord.Collection<unknown, Command>;
@@ -20,7 +20,7 @@ export type Command = ChatInputApplicationCommandData & {
   handler: (data: {
     guildPreferences: GuildPreferences;
     msg?: Message;
-    interaction?: Interaction;
+    interaction?: CommandInteraction;
     options: any[];
-  }) => Promise<string | void>;
+  }) => Promise<boolean>;
 };

@@ -1,4 +1,5 @@
 import { getInfo } from 'ytdl-core';
+import ytpl from 'ytpl';
 import { AudioResource, createAudioResource, demuxProbe } from '@discordjs/voice';
 import { exec as ytdl } from 'youtube-dl-exec';
 export interface TrackData {
@@ -20,6 +21,7 @@ export class Track implements TrackData {
           quiet: true,
           format: 'bestaudio[ext=webm+acodec=opus+asr=48000]/bestaudio',
           limitRate: '100K',
+          output: '-',
         },
         { stdio: ['ignore', 'pipe', 'ignore'] },
       );
@@ -42,11 +44,31 @@ export class Track implements TrackData {
         .catch(onError);
     });
   }
-  public static async fromYouTube(url: string): Promise<Track> {
-    const info = await getInfo(url);
-    return new Track({
-      title: info.videoDetails.title,
-      url,
-    });
+  public static async from(url: string): Promise<Track[]> {
+    const ezURL = url.replace('www.', '').replace('http://', '').replace('https://', '');
+    const tracks: Track[] = [];
+    if (ezURL.startsWith('youtube.com/')) {
+      if (ezURL.startsWith('youtube.com/playlist') || ezURL.startsWith('youtube.com/channel')) {
+        const playlist = await ytpl(url, {
+          limit: Infinity,
+        });
+        for (const item of playlist.items)
+          tracks.push(
+            new Track({
+              title: item.title,
+              url: item.shortUrl,
+            }),
+          );
+      } else {
+        const info = await getInfo(url);
+        tracks.push(
+          new Track({
+            title: info.videoDetails.title,
+            url,
+          }),
+        );
+      }
+    }
+    return tracks;
   }
 }

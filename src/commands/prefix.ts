@@ -19,9 +19,10 @@ const cmd: Command = {
       data.options[0].length === 0 ||
       data.options[0].length > 64
     )
-      return;
+      return false;
     data.guildPreferences.Prefix = data.options[0];
     client.updateGuildPreferences(guild, data.guildPreferences);
+    return true;
   },
 };
 export default cmd;

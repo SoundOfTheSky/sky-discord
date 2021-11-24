@@ -37,12 +37,14 @@ client.on('interactionCreate', async interaction => {
     await interaction.deferReply({
       ephemeral: true,
     });
-    const answer = await cmd.handler({
-      guildPreferences,
-      options,
-      interaction,
-    });
-    await interaction.editReply(answer ?? '👌');
+    if (
+      await cmd.handler({
+        guildPreferences,
+        options,
+        interaction,
+      })
+    )
+      await interaction.editReply('👌');
   }
 });
 client.on('messageCreate', async msg => {
@@ -63,23 +65,27 @@ client.on('messageCreate', async msg => {
     const cmd = commands[msgSplit[0] as keyof typeof commands];
     if (cmd) {
       await msg.react('⏱').catch(() => {});
-      await cmd.handler({
-        guildPreferences,
-        options: msgSplit.slice(1),
-        msg,
-      });
-      msg.react('👌').catch(() => {});
-      msg.reactions.cache.first()?.remove();
+      if (
+        await cmd.handler({
+          guildPreferences,
+          options: msgSplit.slice(1),
+          msg,
+        })
+      )
+        msg.react('👌').catch(() => {});
+      msg.reactions.cache
+        .first()
+        ?.remove()
+        .catch(() => {});
+      setTimeout(() => {
+        msg.delete().catch(() => {});
+      }, 2000);
     } else {
       await msg.react(':regional_indicator_k:').catch(() => {});
       await msg.react(':regional_indicator_a:').catch(() => {});
       await msg.react(':regional_indicator_w:').catch(() => {});
       await msg.react(':regional_indicator_o:').catch(() => {});
     }
-
-    setTimeout(() => {
-      msg.delete().catch(() => {});
-    }, 2000);
   }
 });
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
@@ -111,9 +117,11 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
   }
   if (oldMember.channelId) {
     const channel = newMember.guild.channels.cache.get(oldMember.channelId) as VoiceChannel;
+    const membersLeft = channel.members.filter(m => !m.user.bot).size;
+    if (oldMember.guild.player && membersLeft === 0) oldMember.guild.player.destroy();
     if (
       channel.parentId &&
-      channel.members.size === 0 &&
+      membersLeft === 0 &&
       newMember.guild.channels.cache.get(channel.parentId)!.name.startsWith('!') &&
       newMember.guild.channels.cache.find(c => c.parentId === channel.parentId)!.id !== channel.id
     )
