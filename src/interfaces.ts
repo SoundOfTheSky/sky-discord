@@ -14,7 +14,8 @@ declare global {
   var client: Discord.Client<boolean>;
 }
 export type GuildPreferences = {
-  Prefix: string;
+  prefix: string;
+  playlists: { [key: string]: { title: string; url: string }[] };
 };
 export type Command = ChatInputApplicationCommandData & {
   handler: (data: {

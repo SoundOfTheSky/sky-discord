@@ -8,7 +8,7 @@ import {
   VoiceConnectionDisconnectReason,
   VoiceConnectionStatus,
 } from '@discordjs/voice';
-import { Guild, Message, ReactionCollector, TextChannel, VoiceChannel } from 'discord.js';
+import { Guild, Message, ReactionCollector, TextChannel, User, VoiceChannel } from 'discord.js';
 import type { Track } from './track';
 export default class Player {
   public guild;
@@ -18,8 +18,8 @@ export default class Player {
   public voiceConnection?: VoiceConnection;
   public audioPlayer: AudioPlayer = createAudioPlayer();
   public queue: Track[] = [];
+  public queueIndex = -1;
   private paused = false;
-  private queueIndex = -1;
   private loop = 0;
   private queueLock = false;
   private readyLock = false;
@@ -49,29 +49,24 @@ export default class Player {
             '❌': () => {
               this.destroy();
             },
-            '⏪': async () => {
-              this.queueLock = true;
-              this.audioPlayer.stop();
-              await this.previous();
-              this.queueLock = false;
+            '⏪': () => {
+              this.previous();
             },
             '⏯': () => {
               this.togglePause();
-              this.updateWidget({});
             },
-            '⏩': async () => {
-              this.queueLock = true;
-              this.audioPlayer.stop();
-              await this.next();
-              this.queueLock = false;
+            '⏩': () => {
+              this.next();
             },
             '🔀': () => {
               this.shuffle();
-              this.updateWidget({});
             },
             '🔄': () => {
               this.loop = (this.loop + 1) % 3;
               this.updateWidget({});
+            },
+            '💾': (user: User) => {
+              this.savePlaylistDialog(user);
             },
           };
           this.collector = this.widget.createReactionCollector({
@@ -83,7 +78,7 @@ export default class Player {
             this.widget!.reactions.cache.find(wr => wr.emoji.name === r.emoji.name)!
               .users.remove(u.id)
               .catch(() => {});
-            buttons[r.emoji.name as keyof typeof buttons]();
+            buttons[r.emoji.name as keyof typeof buttons](u);
           });
           for (const btn of Object.keys(buttons)) await this.widget.react(btn);
         } catch {}
@@ -155,6 +150,7 @@ export default class Player {
   }
   public togglePause() {
     if (this.audioPlayer[this.paused ? 'unpause' : 'pause']()) this.paused = !this.paused;
+    this.updateWidget({});
   }
   public shuffle() {
     [this.queue[0], this.queue[this.queueIndex]] = [this.queue[this.queueIndex], this.queue[0]];
@@ -163,6 +159,7 @@ export default class Player {
       [this.queue[i], this.queue[i2]] = [this.queue[i2], this.queue[i]];
     }
     this.queueIndex = 0;
+    this.updateWidget({});
   }
   public async updateWidget({ loading }: { loading?: boolean }) {
     const track = this.queue[this.queueIndex];
@@ -175,8 +172,6 @@ export default class Player {
     );
   }
   public playCurrentTrack(): Promise<boolean> {
-    // https://www.youtube.com/watch?v=yHu3T6gjmEY&ab_channel=USAO
-    // https://www.youtube.com/watch?v=Xyy7bvMc6eA&ab_channel=USAO
     return new Promise(async r => {
       try {
         await this.updateWidget({ loading: true });
@@ -189,21 +184,24 @@ export default class Player {
     });
   }
   public async next(): Promise<void> {
+    this.queueLock = true;
+    this.audioPlayer.stop();
     if (this.queueIndex === this.queue.length - 1) {
       if (this.loop !== 1) this.queueIndex = 0;
-      else {
-        this.destroy('Последняя песня была переключена.');
-        return;
-      }
+      else return;
     } else this.queueIndex++;
     if (!(await this.playCurrentTrack())) await this.next();
+    this.queueLock = false;
   }
   public async previous(): Promise<void> {
+    this.queueLock = true;
+    this.audioPlayer.stop();
     if (this.queueIndex === this.queue.length - 1) {
       if (this.loop !== 1) this.queueIndex = this.queue.length - 1;
       else return;
     } else this.queueIndex--;
     if (!(await this.playCurrentTrack())) await this.previous();
+    this.queueLock = false;
   }
   public async processQueue(): Promise<void> {
     if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle || this.queue.length === 0) return;
@@ -218,5 +216,45 @@ export default class Player {
       this.queueLock = false;
       return this.processQueue();
     }
+  }
+  public async savePlaylistDialog(user: User) {
+    try {
+      const msg = await this.textChannel!.send(
+        user + ' Чтобы сохранить текущий плейлист, напиши его название.\n(У тебя 30 секунд)',
+      );
+      msg
+        .awaitReactions({
+          filter: (r, u) => r.emoji.name === '❌' && u.id === user.id,
+          time: 30000,
+          max: 1,
+        })
+        .then(() => {
+          msg.delete().catch(() => {});
+        })
+        .catch(() => {
+          msg.delete().catch(() => {});
+        });
+      global.client
+        .awaitMessage(msg => msg.member?.user.id === user.id, 30000)
+        .then(async playlistMsg => {
+          if (msg.deleted) return;
+          msg.delete().catch(() => {});
+          if (playlistMsg.content.length > 0 && playlistMsg.content.length <= 64) {
+            try {
+              const preferences = await client.getGuildPreferences(this.guild);
+              preferences.playlists[playlistMsg.content] = [...this.queue];
+              await client.updateGuildPreferences(this.guild, preferences);
+              playlistMsg.react('👌').catch(() => {});
+            } catch {}
+          } else playlistMsg.react('❓').catch(() => {});
+          setTimeout(() => {
+            playlistMsg.delete().catch(() => {});
+          }, 5000);
+        })
+        .catch(() => {
+          msg.delete().catch(() => {});
+        });
+      await msg.react('❌');
+    } catch {}
   }
 }

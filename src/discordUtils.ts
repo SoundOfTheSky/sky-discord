@@ -1,4 +1,4 @@
-import { Guild, TextChannel, Permissions } from 'discord.js';
+import { Guild, TextChannel, Permissions, Message } from 'discord.js';
 import { GuildPreferences } from './interfaces';
 import Player from './player';
 
@@ -45,7 +45,7 @@ function stringifyPreferences(p: GuildPreferences) {
     .join('\n');
 }
 async function getGuildPreferences(guild: Guild) {
-  const defaultPreferencesMessage = 'Prefix: randobot';
+  const defaultPreferencesMessage = JSON.stringify({ prefix: 'randobot', playlists: [] });
   let preferencesChannel: TextChannel = guild.channels.cache.find(
     c => c.type === 'GUILD_TEXT' && c.name === 'randobot-preferences',
   ) as TextChannel;
@@ -71,7 +71,7 @@ async function getGuildPreferences(guild: Guild) {
   if (!preferencesChannel.lastMessageId) await preferencesChannel.send(defaultPreferencesMessage);
   const lastMsg = await preferencesChannel.messages.fetch(preferencesChannel.lastMessageId!);
   let preferences = parsePreferences(lastMsg.content);
-  if (preferences.Prefix.length === 0 || preferences.Prefix.length > 64) {
+  if (preferences.prefix.length === 0 || preferences.prefix.length > 64 || !Array.isArray(preferences.playlists)) {
     await preferencesChannel.send(defaultPreferencesMessage);
     await lastMsg.delete().catch(() => {});
     preferences = parsePreferences(defaultPreferencesMessage);
@@ -86,14 +86,32 @@ async function updateGuildPreferences(guild: Guild, preferences: GuildPreference
   await lastMsg.delete().catch(() => {});
   preferencesChannel.send(stringifyPreferences(preferences));
 }
+const awaitMessage = async (filter: (msg: Message) => boolean, timeout = 60000): Promise<Message> =>
+  new Promise((r, j) => {
+    if (!global.client.awaitingMessages) global.client.awaitingMessages = [];
+    const timer = setTimeout(() => {
+      global.client.awaitingMessages!.splice(global.client.awaitingMessages!.indexOf(filterWrapper), 1);
+      j();
+    }, timeout);
+    global.client.awaitingMessages.push(filterWrapper);
+    function filterWrapper(msg: Message) {
+      if (filter(msg)) {
+        clearTimeout(timer);
+        global.client.awaitingMessages!.splice(global.client.awaitingMessages!.indexOf(filterWrapper), 1);
+        r(msg);
+      }
+    }
+  });
 declare module 'discord.js' {
   export interface Client {
+    awaitingMessages?: ((msg: Message) => void)[];
     managerRequest: typeof managerRequest;
     strToEmojis: typeof strToEmojis;
     parsePreferences: typeof parsePreferences;
     stringifyPreferences: typeof stringifyPreferences;
     getGuildPreferences: typeof getGuildPreferences;
     updateGuildPreferences: typeof updateGuildPreferences;
+    awaitMessage: typeof awaitMessage;
   }
   export interface Guild {
     player?: Player;
@@ -105,3 +123,4 @@ global.client.parsePreferences = parsePreferences;
 global.client.stringifyPreferences = stringifyPreferences;
 global.client.getGuildPreferences = getGuildPreferences;
 global.client.updateGuildPreferences = updateGuildPreferences;
+global.client.awaitMessage = awaitMessage;

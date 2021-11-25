@@ -23,7 +23,6 @@ client.once('ready', async () => {
     guild.commands.set(Object.values(commands));
   });
 });
-client.commands = new Discord.Collection();
 client.on('interactionCreate', async interaction => {
   if (interaction.isCommand()) {
     const cmd = commands[interaction.commandName as keyof typeof commands];
@@ -48,45 +47,30 @@ client.on('interactionCreate', async interaction => {
   }
 });
 client.on('messageCreate', async msg => {
-  if (msg.author.bot) return;
-  if (msg.channel.type === 'DM')
-    await msg.author.send(
-      'Invite link: ' +
-        (await client.generateInvite({
-          scopes: ['bot'],
-          permissions: ['ADMINISTRATOR'],
-        })),
-    );
-  else if (msg.channel.type === 'GUILD_TEXT') {
-    const guildPreferences = await client.getGuildPreferences(msg.guild!);
-    if (!msg.mentions.has(client.user!) && !msg.content.startsWith(guildPreferences.Prefix)) return;
-    const message = msg.content.slice(msg.content.indexOf(' ') + 1);
-    const msgSplit = message.split(' ');
-    const cmd = commands[msgSplit[0] as keyof typeof commands];
-    if (cmd) {
-      await msg.react('⏱').catch(() => {});
-      if (
-        await cmd.handler({
-          guildPreferences,
-          options: msgSplit.slice(1),
-          msg,
-        })
-      )
-        msg.react('👌').catch(() => {});
-      msg.reactions.cache
-        .first()
-        ?.remove()
-        .catch(() => {});
-      setTimeout(() => {
-        msg.delete().catch(() => {});
-      }, 2000);
-    } else {
-      await msg.react(':regional_indicator_k:').catch(() => {});
-      await msg.react(':regional_indicator_a:').catch(() => {});
-      await msg.react(':regional_indicator_w:').catch(() => {});
-      await msg.react(':regional_indicator_o:').catch(() => {});
-    }
-  }
+  if (msg.author.bot || msg.channel.type !== 'GUILD_TEXT') return;
+  if (client.awaitingMessages) client.awaitingMessages.forEach(a => a(msg));
+  const guildPreferences = await client.getGuildPreferences(msg.guild!);
+  if (!msg.mentions.has(client.user!) && !msg.content.startsWith(guildPreferences.prefix)) return;
+  const message = msg.content.slice(msg.content.indexOf(' ') + 1);
+  const msgSplit = message.split(' ');
+  const cmd = commands[msgSplit[0] as keyof typeof commands];
+  if (!cmd) return;
+  msg.react('⏱').catch(() => {});
+  if (
+    await cmd.handler({
+      guildPreferences,
+      options: msgSplit.slice(1),
+      msg,
+    })
+  )
+    msg.react('👌').catch(() => {});
+  msg.reactions.cache
+    .first()
+    ?.remove()
+    .catch(() => {});
+  setTimeout(() => {
+    msg.delete().catch(() => {});
+  }, 5000);
 });
 client.on('voiceStateUpdate', async (oldMember, newMember) => {
   if (newMember.member?.user.bot || oldMember.channelId === newMember.channelId) return;
@@ -125,11 +109,15 @@ client.on('voiceStateUpdate', async (oldMember, newMember) => {
       newMember.guild.channels.cache.get(channel.parentId)!.name.startsWith('!') &&
       newMember.guild.channels.cache.find(c => c.parentId === channel.parentId)!.id !== channel.id
     )
-      await channel.delete().catch(() => {});
+      channel.delete().catch(() => {});
   }
 });
 client.on('guildCreate', async guild => {
   await guild.channels.fetch();
   await client.getGuildPreferences(guild);
+  client.managerRequest('updateStatus()');
+});
+client.on('guildDelete', () => {
+  client.managerRequest('updateStatus()');
 });
 client.login(config.token);

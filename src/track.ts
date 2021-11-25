@@ -9,7 +9,7 @@ export interface TrackData {
 export class Track implements TrackData {
   public readonly url: string;
   public readonly title: string;
-  private constructor({ url, title }: TrackData) {
+  public constructor({ url, title }: TrackData) {
     this.url = url;
     this.title = title;
   }
