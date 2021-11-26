@@ -266,7 +266,11 @@ export default class Player {
           if (msg.deleted) return;
           msg.delete().catch(() => {});
           if (!playlistMsg) return;
-          if (playlistMsg.content.length > 0 && playlistMsg.content.length <= 64) {
+          if (
+            playlistMsg.content.length > 0 &&
+            playlistMsg.content.length <= 64 &&
+            !playlistMsg.content.includes(' ')
+          ) {
             try {
               this.guild.preferences.playlists[playlistMsg.content] = [...this.queue];
               await client.setGuildPreferences(this.guild, this.guild.preferences);
@@ -275,7 +279,12 @@ export default class Player {
               const m = await playlistMsg.reply('Не удалось сохранить плейлист.').catch(() => {});
               setTimeout(() => m && m.delete().catch(() => {}), 5000);
             }
-          } else playlistMsg.react('❓').catch(() => {});
+          } else {
+            const m = await playlistMsg
+              .reply('Плейлист не должен содержать пробелов и быть не больше 64 символов.')
+              .catch(() => {});
+            setTimeout(() => m && m.delete().catch(() => {}), 5000);
+          }
           setTimeout(() => {
             playlistMsg.delete().catch(() => {});
           }, 5000);
