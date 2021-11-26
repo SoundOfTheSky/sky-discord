@@ -1,6 +1,7 @@
 import {
   AudioPlayer,
   AudioPlayerStatus,
+  AudioResource,
   createAudioPlayer,
   entersState,
   joinVoiceChannel,
@@ -19,6 +20,7 @@ export default class Player {
   public audioPlayer: AudioPlayer = createAudioPlayer();
   public queue: Track[] = [];
   public queueIndex = -1;
+  public audioResource?: AudioResource;
   private paused = false;
   private loop = 0;
   private queueLock = false;
@@ -164,19 +166,26 @@ export default class Player {
     this.queueIndex = 0;
     this.updateWidget({});
   }
+  public durationToString(duration: number) {
+    const sec = duration % 60;
+    return Math.floor(duration / 60) + ':' + (sec < 10 ? '0' + sec : sec);
+  }
   public async updateWidget({ loading }: { loading?: boolean }) {
     const track = this.queue[this.queueIndex];
     this.widget?.edit(
       `${loading ? 'Загружаем' : this.paused ? 'На паузе' : 'Сейчас играет'}[${this.queueIndex + 1}/${
         this.queue.length
-      }]: ${track.title}\n${track.url}\n${['', '🔁 Повторяем плейлист', '🔂 Повторяем данную песню'][this.loop]}`,
+      }]: ${track.title}\nДлительность: ${this.durationToString(track.duration)}\n${track.url}\n${
+        ['', '🔁 Повторяем плейлист', '🔂 Повторяем данную песню'][this.loop]
+      }`,
     );
   }
   public playCurrentTrack(): Promise<boolean> {
     return new Promise(async r => {
       try {
         await this.updateWidget({ loading: true });
-        this.audioPlayer.play(await this.queue[this.queueIndex].createAudioResource());
+        this.audioResource = await this.queue[this.queueIndex].createAudioResource();
+        this.audioPlayer.play(this.audioResource);
         await this.updateWidget({});
         r(true);
       } catch (error) {
@@ -213,7 +222,7 @@ export default class Player {
   public async removeCurrentSong() {
     this.queueLock = true;
     this.audioPlayer.stop();
-    if (this.queue.length < 2) this.destroy();
+    if (this.queue.length < 2) this.destroy('Была удалена последняя песня из плейлиста.');
     else {
       this.queue.splice(this.queueIndex, 1);
       if (!(await this.playCurrentTrack())) await this.next(true);
@@ -251,31 +260,27 @@ export default class Player {
         .catch(() => {
           msg.delete().catch(() => {});
         });
-      global.client
-        .awaitMessage(msg => msg.member?.user.id === user.id, 30000)
-        .then(async playlistMsg => {
+      this.textChannel!.awaitMessages({ max: 1, time: 30000, filter: msg => msg.member?.user.id === user.id }).then(
+        async messages => {
+          const playlistMsg = messages.at(0);
           if (msg.deleted) return;
           msg.delete().catch(() => {});
+          if (!playlistMsg) return;
           if (playlistMsg.content.length > 0 && playlistMsg.content.length <= 64) {
             try {
-              this.guild.preferences.playlists[playlistMsg.content] = this.queue.map(q => {
-                const andI = q.url.indexOf('&');
-                return {
-                  id: q.url.slice(q.url.indexOf('v=') + 2, andI === -1 ? undefined : andI),
-                  title: q.title,
-                };
-              });
+              this.guild.preferences.playlists[playlistMsg.content] = [...this.queue];
               await client.setGuildPreferences(this.guild, this.guild.preferences);
               playlistMsg.react('👌').catch(() => {});
-            } catch {}
+            } catch {
+              const m = await playlistMsg.reply('Не удалось сохранить плейлист.').catch(() => {});
+              setTimeout(() => m && m.delete().catch(() => {}), 5000);
+            }
           } else playlistMsg.react('❓').catch(() => {});
           setTimeout(() => {
             playlistMsg.delete().catch(() => {});
           }, 5000);
-        })
-        .catch(() => {
-          msg.delete().catch(() => {});
-        });
+        },
+      );
       await msg.react('❌');
     } catch {}
   }

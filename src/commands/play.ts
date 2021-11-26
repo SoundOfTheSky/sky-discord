@@ -38,7 +38,7 @@ const cmd: Command = {
         await answer('Где ты эту ссылку взял?\nТы бы мне еще консервных банок приволок.');
         return false;
       }
-      if (!member.guild.player) {
+      if (!member.guild.player || member.guild.player.voiceChannel.id !== member.voice.channel.id) {
         new Player(member.guild, member.voice.channel, textChannel);
         await member.guild.player!.init();
       }

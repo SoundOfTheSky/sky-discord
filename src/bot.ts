@@ -68,7 +68,6 @@ client.once('ready', async () => {
             .catch(() => {});
           return;
         }
-      if (client.awaitingMessages) client.awaitingMessages.forEach(a => a(msg));
       if (!msg.mentions.has(client.user!) && !msg.content.startsWith(msg.guild!.preferences.prefix)) return;
       const message = msg.content.slice(msg.content.indexOf(' ') + 1);
       const msgSplit = message.split(' ');
@@ -93,10 +92,6 @@ client.once('ready', async () => {
         })
       )
         msg.react('👌').catch(() => {});
-      msg.reactions.cache
-        .first()
-        ?.remove()
-        .catch(() => {});
       setTimeout(() => {
         msg.delete().catch(() => {});
       }, 5000);

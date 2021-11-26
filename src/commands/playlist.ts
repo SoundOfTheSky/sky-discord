@@ -48,15 +48,13 @@ const cmd: Command = {
           await answer('Ало? Куда присоединяться? Сначала сам зайди в канал.');
           return false;
         }
-        if (!member.guild.player) {
+        if (!member.guild.player || member.guild.player.voiceChannel.id !== member.voice.channel.id) {
           new Player(member.guild, member.voice.channel, textChannel);
           await member.guild.player!.init();
         }
-        const tracks = member.guild.preferences.playlists[data.options[0]].map(
-          t => new Track({ url: 'https://www.youtube.com/watch?v=' + t.id, title: t.title }),
-        );
+        const tracks = member.guild.preferences.playlists[data.options[0]].map(t => new Track(t));
         member.guild.player!.queue = tracks;
-        member.guild.player!.queueIndex = 0;
+        member.guild.player!.queueIndex = -1;
         if (member.guild.player!.audioPlayer.state.status !== AudioPlayerStatus.Idle)
           member.guild.player!.updateWidget({});
         member.guild.player!.processQueue();
