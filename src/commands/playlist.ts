@@ -20,24 +20,29 @@ const cmd: Command = {
   ],
   async handler(data) {
     const member = data.interaction ? data.interaction.member : data.msg!.member!;
-    const answer = (msg: string) => (data.interaction ? data.interaction.editReply(msg) : data.msg!.reply(msg));
+    const answer = (msg: string) =>
+      data.interaction
+        ? data.interaction.editReply(msg)
+        : data
+            .msg!.reply(msg)
+            .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000))
+            .catch(() => {});
     const textChannel = (data.interaction ? data.interaction.channel! : data.msg!.channel!) as TextChannel;
     if (!(member instanceof GuildMember)) {
       await answer('Мальчик, мы работаем только на сервере.');
       return false;
     }
-    const preferences = data.guildPreferences;
     if (!data.options[0]) {
       await answer(
-        Object.keys(preferences.playlists)
-          .map((p, i) => `${i + 1}. ${p} [${preferences.playlists[p].length} треков]`)
+        Object.keys(member.guild.preferences.playlists)
+          .map((p, i) => `${i + 1}. ${p} [${member.guild.preferences.playlists[p].length} треков]`)
           .join('\n'),
       );
       return false;
-    } else if (data.options[0] in preferences.playlists) {
+    } else if (data.options[0] in member.guild.preferences.playlists) {
       if (data.options[1]) {
-        delete preferences.playlists[data.options[0]];
-        await client.updateGuildPreferences(member.guild, preferences);
+        delete member.guild.preferences.playlists[data.options[0]];
+        await client.setGuildPreferences(member.guild, member.guild.preferences);
       } else {
         if (!(member.voice.channel instanceof VoiceChannel)) {
           await answer('Ало? Куда присоединяться? Сначала сам зайди в канал.');
@@ -47,7 +52,9 @@ const cmd: Command = {
           new Player(member.guild, member.voice.channel, textChannel);
           await member.guild.player!.init();
         }
-        const tracks = preferences.playlists[data.options[0]].map(t => new Track(t));
+        const tracks = member.guild.preferences.playlists[data.options[0]].map(
+          t => new Track({ url: 'https://www.youtube.com/watch?v=' + t.id, title: t.title }),
+        );
         member.guild.player!.queue = tracks;
         member.guild.player!.queueIndex = 0;
         if (member.guild.player!.audioPlayer.state.status !== AudioPlayerStatus.Idle)

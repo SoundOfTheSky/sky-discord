@@ -24,28 +24,15 @@ const strToEmojis = (n: string) =>
           : [':zero:', ':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:'][+b]),
       '',
     );
-function parsePreferences(t: string): GuildPreferences {
-  return Object.fromEntries(
-    t.split('\n').map(row =>
-      row
-        .split(': ')
-        .map(el => el.trim())
-        .map(el => (el === 'yes' ? true : el === 'no' ? false : el)),
-    ),
-  );
+function parsePreferences(t: string): GuildPreferences | false {
+  try {
+    return JSON.parse(t);
+  } catch {
+    return false;
+  }
 }
-function stringifyPreferences(p: GuildPreferences) {
-  return Object.entries(p)
-    .map(
-      op =>
-        op[0] +
-        ': ' +
-        ((op[1] as unknown as boolean) === true ? 'yes' : (op[1] as unknown as boolean) === false ? 'no' : op[1]),
-    )
-    .join('\n');
-}
-async function getGuildPreferences(guild: Guild) {
-  const defaultPreferencesMessage = JSON.stringify({ prefix: 'randobot', playlists: [] });
+async function updateGuildPreferences(guild: Guild) {
+  const defaultPreferencesMessage = JSON.stringify({ prefix: guild.me?.displayName, playlists: {} }, undefined, 2);
   let preferencesChannel: TextChannel = guild.channels.cache.find(
     c => c.type === 'GUILD_TEXT' && c.name === 'randobot-preferences',
   ) as TextChannel;
@@ -68,23 +55,34 @@ async function getGuildPreferences(guild: Guild) {
       'Это приватный канал, созданный для хранения настроек бота Randobot.\nТут нельзя ничего менять!\n=====\n',
     );
   }
+  let lastMsg: Message | undefined;
   if (!preferencesChannel.lastMessageId) await preferencesChannel.send(defaultPreferencesMessage);
-  const lastMsg = await preferencesChannel.messages.fetch(preferencesChannel.lastMessageId!);
+  try {
+    if (!lastMsg) lastMsg = await preferencesChannel.messages.fetch(preferencesChannel.lastMessageId!);
+  } catch {
+    lastMsg = await preferencesChannel.send(defaultPreferencesMessage);
+  }
   let preferences = parsePreferences(lastMsg.content);
-  if (preferences.prefix.length === 0 || preferences.prefix.length > 64 || !Array.isArray(preferences.playlists)) {
+  if (
+    preferences === false ||
+    preferences.prefix.length === 0 ||
+    preferences.prefix.length > 64 ||
+    typeof preferences.playlists !== 'object'
+  ) {
     await preferencesChannel.send(defaultPreferencesMessage);
     await lastMsg.delete().catch(() => {});
     preferences = parsePreferences(defaultPreferencesMessage);
   }
-  return preferences;
+  guild.preferences = preferences as GuildPreferences;
 }
-async function updateGuildPreferences(guild: Guild, preferences: GuildPreferences) {
+async function setGuildPreferences(guild: Guild, preferences: GuildPreferences) {
   const preferencesChannel: TextChannel = guild.channels.cache.find(
     c => c.type === 'GUILD_TEXT' && c.name === 'randobot-preferences',
   ) as TextChannel;
   const lastMsg = await preferencesChannel.messages.fetch(preferencesChannel.lastMessageId!);
   await lastMsg.delete().catch(() => {});
-  preferencesChannel.send(stringifyPreferences(preferences));
+  await preferencesChannel?.send(JSON.stringify(preferences, undefined, 2));
+  guild.preferences = preferences;
 }
 const awaitMessage = async (filter: (msg: Message) => boolean, timeout = 60000): Promise<Message> =>
   new Promise((r, j) => {
@@ -108,19 +106,18 @@ declare module 'discord.js' {
     managerRequest: typeof managerRequest;
     strToEmojis: typeof strToEmojis;
     parsePreferences: typeof parsePreferences;
-    stringifyPreferences: typeof stringifyPreferences;
-    getGuildPreferences: typeof getGuildPreferences;
     updateGuildPreferences: typeof updateGuildPreferences;
+    setGuildPreferences: typeof setGuildPreferences;
     awaitMessage: typeof awaitMessage;
   }
   export interface Guild {
     player?: Player;
+    preferences: GuildPreferences;
   }
 }
 global.client.managerRequest = managerRequest;
 global.client.strToEmojis = strToEmojis;
 global.client.parsePreferences = parsePreferences;
-global.client.stringifyPreferences = stringifyPreferences;
-global.client.getGuildPreferences = getGuildPreferences;
 global.client.updateGuildPreferences = updateGuildPreferences;
+global.client.setGuildPreferences = setGuildPreferences;
 global.client.awaitMessage = awaitMessage;

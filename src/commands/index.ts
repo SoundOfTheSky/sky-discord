@@ -1,10 +1,10 @@
-import prefix from './nickname';
+import nickname from './nickname';
 import play from './play';
 import leave from './leave';
 import stop from './stop';
 import playlist from './playlist';
 export default {
-  prefix,
+  nickname,
   play,
   playlist,
   leave,

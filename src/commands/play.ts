@@ -17,7 +17,13 @@ const cmd: Command = {
   async handler(data) {
     const member = data.interaction ? data.interaction.member : data.msg!.member!;
     const textChannel = (data.interaction ? data.interaction.channel! : data.msg!.channel!) as TextChannel;
-    const answer = (msg: string) => (data.interaction ? data.interaction.editReply(msg) : data.msg!.reply(msg));
+    const answer = (msg: string) =>
+      data.interaction
+        ? data.interaction.editReply(msg)
+        : data
+            .msg!.reply(msg)
+            .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000))
+            .catch(() => {});
     if (!(member instanceof GuildMember)) {
       await answer('Мальчик, мы работаем только на сервере.');
       return false;

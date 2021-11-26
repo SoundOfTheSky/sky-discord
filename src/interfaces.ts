@@ -15,13 +15,8 @@ declare global {
 }
 export type GuildPreferences = {
   prefix: string;
-  playlists: { [key: string]: { title: string; url: string }[] };
+  playlists: { [key: string]: { title: string; id: string }[] };
 };
 export type Command = ChatInputApplicationCommandData & {
-  handler: (data: {
-    guildPreferences: GuildPreferences;
-    msg?: Message;
-    interaction?: CommandInteraction;
-    options: any[];
-  }) => Promise<boolean>;
+  handler: (data: { msg?: Message; interaction?: CommandInteraction; options: any[] }) => Promise<boolean>;
 };

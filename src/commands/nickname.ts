@@ -12,7 +12,13 @@ const cmd: Command = {
   ],
   async handler(data) {
     const guild = data.interaction ? data.interaction.guild : data.msg!.guild;
-    const answer = (msg: string) => (data.interaction ? data.interaction.editReply(msg) : data.msg!.reply(msg));
+    const answer = (msg: string) =>
+      data.interaction
+        ? data.interaction.editReply(msg)
+        : data
+            .msg!.reply(msg)
+            .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000))
+            .catch(() => {});
     if (
       !guild ||
       data.options.length === 0 ||
@@ -26,8 +32,8 @@ const cmd: Command = {
     try {
       const member = await guild.members.fetch(client.user!);
       await member.setNickname(data.options[0]);
-      data.guildPreferences.prefix = data.options[0];
-      await client.updateGuildPreferences(guild, data.guildPreferences);
+      member.guild.preferences.prefix = data.options[0];
+      await client.setGuildPreferences(guild, member.guild.preferences);
     } catch {
       await answer('Что-то пошло не так.');
       return false;

@@ -37,33 +37,36 @@ export default class Player {
       if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) this.processQueue();
     });
     this.audioPlayer.on('error', () => {
-      this.next();
+      this.next(true);
     });
     this.voiceConnection!.subscribe(this.audioPlayer);
 
     (async () => {
       if (this.textChannel) {
         try {
-          this.widget = await this.textChannel.send('Создаем ахуенный виджет');
+          this.widget = await this.textChannel.send('Создаем ахуенный плеер');
           const buttons = {
             '❌': () => {
               this.destroy();
             },
-            '⏪': () => {
+            '⏮': () => {
               this.previous();
             },
             '⏯': () => {
               this.togglePause();
             },
-            '⏩': () => {
+            '⏭': () => {
               this.next();
             },
             '🔀': () => {
               this.shuffle();
             },
-            '🔄': () => {
+            '🔁': () => {
               this.loop = (this.loop + 1) % 3;
               this.updateWidget({});
+            },
+            '✂': () => {
+              this.removeCurrentSong();
             },
             '💾': (user: User) => {
               this.savePlaylistDialog(user);
@@ -164,11 +167,9 @@ export default class Player {
   public async updateWidget({ loading }: { loading?: boolean }) {
     const track = this.queue[this.queueIndex];
     this.widget?.edit(
-      `${loading ? 'Загружаем' : this.paused ? '⏸На паузе⏸' : 'Сейчас играет'}[${this.queueIndex + 1}/${
+      `${loading ? 'Загружаем' : this.paused ? 'На паузе' : 'Сейчас играет'}[${this.queueIndex + 1}/${
         this.queue.length
-      }]: ${track.title}\n${track.url}\n🔄${
-        ['Повтор отключен', 'Повторяем плейлист', 'Повторяем данную песню'][this.loop]
-      }🔄`,
+      }]: ${track.title}\n${track.url}\n${['', '🔁 Повторяем плейлист', '🔂 Повторяем данную песню'][this.loop]}`,
     );
   }
   public playCurrentTrack(): Promise<boolean> {
@@ -183,24 +184,40 @@ export default class Player {
       }
     });
   }
-  public async next(): Promise<void> {
+  public async next(destroyOnEnd = false): Promise<void> {
     this.queueLock = true;
     this.audioPlayer.stop();
     if (this.queueIndex === this.queue.length - 1) {
       if (this.loop !== 1) this.queueIndex = 0;
-      else return;
+      else {
+        if (destroyOnEnd) this.destroy('Предыдущая песня сдохла, была пропущена и плейлист закончился.');
+        return;
+      }
     } else this.queueIndex++;
-    if (!(await this.playCurrentTrack())) await this.next();
+    if (!(await this.playCurrentTrack())) await this.next(true);
     this.queueLock = false;
   }
-  public async previous(): Promise<void> {
+  public async previous(destroyOnEnd = false): Promise<void> {
     this.queueLock = true;
     this.audioPlayer.stop();
     if (this.queueIndex === this.queue.length - 1) {
       if (this.loop !== 1) this.queueIndex = this.queue.length - 1;
-      else return;
+      else {
+        if (destroyOnEnd) this.destroy('Предыдущая песня сдохла, была пропущена и плейлист закончился.');
+        return;
+      }
     } else this.queueIndex--;
-    if (!(await this.playCurrentTrack())) await this.previous();
+    if (!(await this.playCurrentTrack())) await this.previous(true);
+    this.queueLock = false;
+  }
+  public async removeCurrentSong() {
+    this.queueLock = true;
+    this.audioPlayer.stop();
+    if (this.queue.length < 2) this.destroy();
+    else {
+      this.queue.splice(this.queueIndex, 1);
+      if (!(await this.playCurrentTrack())) await this.next(true);
+    }
     this.queueLock = false;
   }
   public async processQueue(): Promise<void> {
@@ -241,9 +258,14 @@ export default class Player {
           msg.delete().catch(() => {});
           if (playlistMsg.content.length > 0 && playlistMsg.content.length <= 64) {
             try {
-              const preferences = await client.getGuildPreferences(this.guild);
-              preferences.playlists[playlistMsg.content] = [...this.queue];
-              await client.updateGuildPreferences(this.guild, preferences);
+              this.guild.preferences.playlists[playlistMsg.content] = this.queue.map(q => {
+                const andI = q.url.indexOf('&');
+                return {
+                  id: q.url.slice(q.url.indexOf('v=') + 2, andI === -1 ? undefined : andI),
+                  title: q.title,
+                };
+              });
+              await client.setGuildPreferences(this.guild, this.guild.preferences);
               playlistMsg.react('👌').catch(() => {});
             } catch {}
           } else playlistMsg.react('❓').catch(() => {});
