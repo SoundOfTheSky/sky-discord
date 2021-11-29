@@ -33,7 +33,7 @@ const cmd: Command = {
       return false;
     }
     try {
-      const tracks = await Track.from(data.options[0]);
+      const tracks = await Track.from(data.options[0], member.guild.preferences.youtubeCookies);
       if (tracks.length === 0) {
         await answer('Где ты эту ссылку взял?\nТы бы мне еще консервных банок приволок.');
         return false;

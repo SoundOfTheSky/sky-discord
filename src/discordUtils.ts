@@ -21,7 +21,7 @@ function parsePreferences(t: string): GuildPreferences | false {
   }
 }
 async function updateGuildPreferences(guild: Guild) {
-  const defaultPreferences = { prefix: guild.me?.displayName ?? 'randobot', playlists: {} };
+  const defaultPreferences = { prefix: guild.me?.displayName ?? 'randobot', playlists: {}, youtubeCookies: '' };
   let preferencesChannel: TextChannel = guild.channels.cache.find(
     c => c.type === 'GUILD_TEXT' && c.name === 'randobot-preferences',
   ) as TextChannel;

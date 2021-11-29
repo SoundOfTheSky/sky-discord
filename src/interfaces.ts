@@ -16,6 +16,7 @@ declare global {
 }
 export type GuildPreferences = {
   prefix: string;
+  youtubeCookies: string;
   playlists: { [key: string]: TrackData[] };
 };
 export type Command = ChatInputApplicationCommandData & {

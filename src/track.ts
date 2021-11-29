@@ -7,22 +7,24 @@ export interface TrackData {
   url: string;
   title: string;
   duration: number;
+  cookie?: string;
 }
 export class Track implements TrackData {
   public readonly url: string;
   public readonly title: string;
   public readonly duration: number;
-  public constructor({ url, title, duration }: TrackData) {
+  public readonly cookie: string;
+  public constructor({ url, title, duration, cookie }: TrackData) {
     this.url = url;
     this.title = title;
     this.duration = duration;
+    this.cookie = cookie ?? '';
   }
   public async createAudioResource(): Promise<AudioResource<Track>> {
     const info = await ytdl.getInfo(this.url, {
       requestOptions: {
         headers: {
-          cookie:
-            'LOGIN_INFO=AFmmF2swRAIgZuk02acRA13AOSoq0p-AsRVSB5F5u9U1c6W-NzKVqOoCIAfN99iTYoO04NafrRYs_SxMuWmxFjNwAkFKmFPz2sxo:QUQ3MjNmd0dUZlRoanlIQmR0M3ZOMjQ4RkpCZjhYeEFDeVlwelJvTUZkbWdueWdzbjNzZGxuU2MteGs2ckpzX3hBNkljSmxBZjNHZFoxdGZNVDhZOFlyX0tnaWFrMGFKWUotZEQtSW5wY3k1V1BnTXRCekF3NzhIZm8tc2V3RlRYdXBfb1EtWmhGYVFjQk1fajVyV2pJVVlBZnNsak5fMHlDVEVUNFpBOG5mSDIxYWt3ekVnMXhUN2RyeWE4THBIWVBHcF9UeVJ2OERNS01oUklDbENJWGFoUDZTQ09fcVVJZw==; VISITOR_INFO1_LIVE=FyJxjrvnuKU; SID=DQhCG08wV6mFmwd5l-WUg8B71c38ZEPDgecJ537T734WHal-5Y7H5hjVewNNUA-tQCmafw.; __Secure-1PSID=DQhCG08wV6mFmwd5l-WUg8B71c38ZEPDgecJ537T734WHal-SN0Mg82EIKnGm0aJGuOrWg.; __Secure-3PSID=DQhCG08wV6mFmwd5l-WUg8B71c38ZEPDgecJ537T734WHal-AIDTbh101PBgnFmZs0qwgA.; HSID=Az6rj5B1S0mNSrK3N; SSID=AfiltjL6MjlK-M6Zj; APISID=NTYOIpN0YPGCUJq6/Au3Kyeaa5a2gW3QGE; SAPISID=E5aLipTKv9UDlcuT/ATktswflKcOj4frR5; __Secure-1PAPISID=E5aLipTKv9UDlcuT/ATktswflKcOj4frR5; __Secure-3PAPISID=E5aLipTKv9UDlcuT/ATktswflKcOj4frR5; PREF=tz=Europe.Moscow&f6=40000000; YSC=6ROaDNt-2Tk; SIDCC=AJi4QfFWxaTMU_Rm3ivyFf8mOoXQld-qGcc9KvuoXrT_VKUHeEdZp-FeL84Glq1PWM31WetLdg; __Secure-3PSIDCC=AJi4QfFsovjb5i5WgJ2YmJikw4Os0zDebhFPQAdhjQTRzSFnxIbshu0pdKXGX8Mi7l0U-ieXcQ',
+          cookie: this.cookie,
         },
       },
     });
@@ -73,7 +75,7 @@ export class Track implements TrackData {
     const probe = await demuxProbe(stream);
     return createAudioResource(probe.stream, { metadata: this, inputType: probe.type });
   }
-  public static async from(url: string): Promise<Track[]> {
+  public static async from(url: string, cookie = ''): Promise<Track[]> {
     url = url.replace('youtu.be/', 'youtube.com/watch?v=');
     const ezURL = url.replace('www.', '').replace('http://', '').replace('https://', '');
     const tracks: Track[] = [];
@@ -88,6 +90,7 @@ export class Track implements TrackData {
               title: item.title,
               url: item.shortUrl,
               duration: item.durationSec ?? 0,
+              cookie,
             }),
           );
       } else {
@@ -95,8 +98,7 @@ export class Track implements TrackData {
         const info = await ytdl.getBasicInfo(url, {
           requestOptions: {
             headers: {
-              cookie:
-                'LOGIN_INFO=AFmmF2swRAIgZuk02acRA13AOSoq0p-AsRVSB5F5u9U1c6W-NzKVqOoCIAfN99iTYoO04NafrRYs_SxMuWmxFjNwAkFKmFPz2sxo:QUQ3MjNmd0dUZlRoanlIQmR0M3ZOMjQ4RkpCZjhYeEFDeVlwelJvTUZkbWdueWdzbjNzZGxuU2MteGs2ckpzX3hBNkljSmxBZjNHZFoxdGZNVDhZOFlyX0tnaWFrMGFKWUotZEQtSW5wY3k1V1BnTXRCekF3NzhIZm8tc2V3RlRYdXBfb1EtWmhGYVFjQk1fajVyV2pJVVlBZnNsak5fMHlDVEVUNFpBOG5mSDIxYWt3ekVnMXhUN2RyeWE4THBIWVBHcF9UeVJ2OERNS01oUklDbENJWGFoUDZTQ09fcVVJZw==; VISITOR_INFO1_LIVE=FyJxjrvnuKU; SID=DQhCG08wV6mFmwd5l-WUg8B71c38ZEPDgecJ537T734WHal-5Y7H5hjVewNNUA-tQCmafw.; __Secure-1PSID=DQhCG08wV6mFmwd5l-WUg8B71c38ZEPDgecJ537T734WHal-SN0Mg82EIKnGm0aJGuOrWg.; __Secure-3PSID=DQhCG08wV6mFmwd5l-WUg8B71c38ZEPDgecJ537T734WHal-AIDTbh101PBgnFmZs0qwgA.; HSID=Az6rj5B1S0mNSrK3N; SSID=AfiltjL6MjlK-M6Zj; APISID=NTYOIpN0YPGCUJq6/Au3Kyeaa5a2gW3QGE; SAPISID=E5aLipTKv9UDlcuT/ATktswflKcOj4frR5; __Secure-1PAPISID=E5aLipTKv9UDlcuT/ATktswflKcOj4frR5; __Secure-3PAPISID=E5aLipTKv9UDlcuT/ATktswflKcOj4frR5; PREF=tz=Europe.Moscow&f6=40000000; YSC=6ROaDNt-2Tk; SIDCC=AJi4QfFWxaTMU_Rm3ivyFf8mOoXQld-qGcc9KvuoXrT_VKUHeEdZp-FeL84Glq1PWM31WetLdg; __Secure-3PSIDCC=AJi4QfFsovjb5i5WgJ2YmJikw4Os0zDebhFPQAdhjQTRzSFnxIbshu0pdKXGX8Mi7l0U-ieXcQ',
+              cookie,
             },
           },
         });
@@ -105,6 +107,7 @@ export class Track implements TrackData {
             title: info.videoDetails.title,
             duration: +info.videoDetails.lengthSeconds,
             url,
+            cookie,
           }),
         );
       }
