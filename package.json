@@ -11,7 +11,8 @@
     "tslib": "latest",
     "tweetnacl": "latest",
     "youtube-dl-exec": "latest",
-    "ytpl": "^2.2.3"
+    "ytdl-core": "latest",
+    "ytpl": "latest"
   },
   "devDependencies": {
     "@types/express": "latest",

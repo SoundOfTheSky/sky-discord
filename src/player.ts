@@ -38,7 +38,8 @@ export default class Player {
     this.audioPlayer.on('stateChange', (oldState, newState) => {
       if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) this.processQueue();
     });
-    this.audioPlayer.on('error', () => {
+    this.audioPlayer.on('error', e => {
+      console.log('audio player error', e);
       this.next(true);
     });
     this.voiceConnection!.subscribe(this.audioPlayer);
@@ -175,9 +176,9 @@ export default class Player {
     this.widget?.edit(
       `${loading ? 'Загружаем' : this.paused ? 'На паузе' : 'Сейчас играет'}[${this.queueIndex + 1}/${
         this.queue.length
-      }]: ${track.title}\nДлительность: ${this.durationToString(track.duration)}\n${track.url}\n${
-        ['', '🔁 Повторяем плейлист', '🔂 Повторяем данную песню'][this.loop]
-      }`,
+      }]: ${track.title}\n${
+        track.duration === 0 ? '' : 'Длительность: ' + this.durationToString(track.duration) + '\n'
+      }${track.url}\n${['', '🔁 Повторяем плейлист', '🔂 Повторяем данную песню'][this.loop]}`,
     );
   }
   public playCurrentTrack(): Promise<boolean> {
@@ -197,9 +198,9 @@ export default class Player {
     this.queueLock = true;
     this.audioPlayer.stop();
     if (this.queueIndex === this.queue.length - 1) {
-      if (this.loop !== 1) this.queueIndex = 0;
-      else {
-        if (destroyOnEnd) this.destroy('Предыдущая песня сдохла, была пропущена и плейлист закончился.');
+      if (this.loop === 1) this.queueIndex = 0;
+      else if (destroyOnEnd) {
+        this.destroy('Предыдущая песня сдохла, была пропущена и плейлист закончился.');
         return;
       }
     } else this.queueIndex++;
@@ -209,10 +210,10 @@ export default class Player {
   public async previous(destroyOnEnd = false): Promise<void> {
     this.queueLock = true;
     this.audioPlayer.stop();
-    if (this.queueIndex === this.queue.length - 1) {
-      if (this.loop !== 1) this.queueIndex = this.queue.length - 1;
-      else {
-        if (destroyOnEnd) this.destroy('Предыдущая песня сдохла, была пропущена и плейлист закончился.');
+    if (this.queueIndex === 0) {
+      if (this.loop === 1) this.queueIndex = this.queue.length - 1;
+      else if (destroyOnEnd) {
+        this.destroy('Предыдущая песня сдохла, была пропущена и плейлист закончился.');
         return;
       }
     } else this.queueIndex--;
@@ -246,7 +247,7 @@ export default class Player {
   public async savePlaylistDialog(user: User) {
     try {
       const msg = await this.textChannel!.send(
-        user + ' Чтобы сохранить текущий плейлист, напиши его название.\n(У тебя 30 секунд)',
+        user.toString() + ' Чтобы сохранить текущий плейлист, напиши его название.\n(У тебя 30 секунд)',
       );
       msg
         .awaitReactions({
