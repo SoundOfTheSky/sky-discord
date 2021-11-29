@@ -1,8 +1,7 @@
 import ytpl from 'ytpl';
+import ytsr from 'ytsr';
 import { AudioResource, createAudioResource, demuxProbe } from '@discordjs/voice';
-//import { exec as ytdl } from 'youtube-dl-exec';
 import ytdl from 'ytdl-core';
-import https from 'https';
 export interface TrackData {
   url: string;
   title: string;
@@ -110,6 +109,17 @@ export class Track implements TrackData {
           }),
         );
       }
+    } else {
+      const results = await ytsr(url, {
+        limit: 3,
+        requestOptions: {
+          headers: {
+            cookie,
+          },
+        },
+      });
+      const result = results.items.find(i => i.type === 'channel' || i.type === 'playlist' || i.type === 'video');
+      if (result) tracks.push(...(await this.from((result as ytsr.Video).url)));
     }
     return tracks;
   }

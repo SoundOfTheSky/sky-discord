@@ -1,5 +1,4 @@
 import Discord, { CategoryChannel, TextChannel, VoiceChannel } from 'discord.js';
-import config from './config.json';
 import commands from './commands';
 const client = new Discord.Client({
   intents: [
@@ -158,4 +157,4 @@ client.on('guildCreate', async guild => {
 client.on('guildDelete', () => {
   client.managerRequest('updateStatus()');
 });
-client.login(config.token);
+client.login(process.env.TOKEN);

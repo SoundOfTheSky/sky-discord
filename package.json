@@ -6,13 +6,15 @@
     "@discordjs/opus": "latest",
     "@discordjs/voice": "latest",
     "discord.js": "latest",
+    "dotenv": "^10.0.0",
     "express": "latest",
     "ffmpeg-static": "latest",
     "tslib": "latest",
     "tweetnacl": "latest",
     "youtube-dl-exec": "latest",
     "ytdl-core": "latest",
-    "ytpl": "latest"
+    "ytpl": "latest",
+    "ytsr": "^3.5.3"
   },
   "devDependencies": {
     "@types/express": "latest",

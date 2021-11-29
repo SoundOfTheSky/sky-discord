@@ -1,6 +1,7 @@
 import { ShardingManager } from 'discord.js';
 import Express from 'express';
-import config from './config.json';
+import dotenv from 'dotenv';
+dotenv.config();
 const express = Express();
 express.listen(process.env.PORT || 3000);
 express.get('', (req, res) => {
@@ -9,7 +10,7 @@ express.get('', (req, res) => {
 let manager: ShardingManager;
 async function main() {
   manager = new ShardingManager(__dirname + '/bot.js', {
-    token: config.token,
+    token: process.env.TOKEN,
     totalShards: 1,
     execArgv: ['--trace-warnings'],
   });
