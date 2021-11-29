@@ -1,7 +1,7 @@
 import { Command } from '../interfaces';
 const cmd: Command = {
   name: 'youtube-cookie',
-  description: 'Установить свои куки для запросов на ютуб. Позволяет включать гачи-ремиксы с возрастным ограничением.',
+  description: 'Установить свои куки для ютуба. Позволяет включать гачи-ремиксы с возрастным ограничением.',
   options: [
     {
       name: 'cookies',

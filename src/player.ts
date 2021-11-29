@@ -11,6 +11,13 @@ import {
 } from '@discordjs/voice';
 import { Guild, Message, ReactionCollector, TextChannel, User, VoiceChannel } from 'discord.js';
 import type { Track } from './track';
+const AudioPlayerStatuses = {
+  autopaused: 'Остановлен',
+  paused: 'На паузе',
+  playing: 'Проигрываем',
+  idle: 'Ожидаем',
+  buffering: 'Загружаем',
+};
 export default class Player {
   public guild;
   public voiceChannel;
@@ -21,11 +28,11 @@ export default class Player {
   public queue: Track[] = [];
   public queueIndex = -1;
   public audioResource?: AudioResource;
-  private paused = false;
   private loop = 0;
   private queueLock = false;
   private readyLock = false;
   private collector?: ReactionCollector;
+  private widgetUpdateInterval?: NodeJS.Timer;
 
   public constructor(guild: Guild, voiceChannel: VoiceChannel, textChannel?: TextChannel) {
     this.guild = guild;
@@ -36,6 +43,10 @@ export default class Player {
   public async init() {
     await this.initializeStableVoiceConnection();
     this.audioPlayer.on('stateChange', (oldState, newState) => {
+      clearInterval(this.widgetUpdateInterval!);
+      this.updateWidget({});
+      if (newState.status === AudioPlayerStatus.Playing)
+        this.widgetUpdateInterval = setInterval(() => this.updateWidget({}), 2500);
       if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) this.processQueue();
     });
     this.audioPlayer.on('error', e => {
@@ -66,7 +77,7 @@ export default class Player {
             },
             '🔁': () => {
               this.loop = (this.loop + 1) % 3;
-              this.updateWidget({});
+              if (this.audioPlayer.state.status !== AudioPlayerStatus.Playing) this.updateWidget({});
             },
             '✂': () => {
               this.removeCurrentSong();
@@ -142,6 +153,7 @@ export default class Player {
     this.queueLock = true;
     this.queue = [];
     this.audioPlayer!.stop(true);
+    clearInterval(this.widgetUpdateInterval!);
     if (this.voiceConnection && this.voiceConnection.state.status !== VoiceConnectionStatus.Destroyed)
       this.voiceConnection.destroy();
     if (this.collector) this.collector.stop();
@@ -155,8 +167,8 @@ export default class Player {
     delete this.guild.player;
   }
   public togglePause() {
-    if (this.audioPlayer[this.paused ? 'unpause' : 'pause']()) this.paused = !this.paused;
-    this.updateWidget({});
+    if (this.audioPlayer.state.status === AudioPlayerStatus.Paused) this.audioPlayer.unpause();
+    else if (this.audioPlayer.state.status === AudioPlayerStatus.Playing) this.audioPlayer.pause();
   }
   public shuffle() {
     [this.queue[0], this.queue[this.queueIndex]] = [this.queue[this.queueIndex], this.queue[0]];
@@ -165,7 +177,7 @@ export default class Player {
       [this.queue[i], this.queue[i2]] = [this.queue[i2], this.queue[i]];
     }
     this.queueIndex = 0;
-    this.updateWidget({});
+    if (this.audioPlayer.state.status !== AudioPlayerStatus.Playing) this.updateWidget({});
   }
   public durationToString(duration: number) {
     const sec = duration % 60;
@@ -173,13 +185,52 @@ export default class Player {
   }
   public async updateWidget({ loading }: { loading?: boolean }) {
     const track = this.queue[this.queueIndex];
-    this.widget?.edit(
-      `${loading ? 'Загружаем' : this.paused ? 'На паузе' : 'Сейчас играет'}[${this.queueIndex + 1}/${
-        this.queue.length
-      }]: ${track.title}\n${
-        track.duration === 0 ? '' : 'Длительность: ' + this.durationToString(track.duration) + '\n'
-      }${track.url}\n${['', '🔁 Повторяем плейлист', '🔂 Повторяем данную песню'][this.loop]}`,
-    );
+    const playbackDuration = Math.floor((this.audioResource?.playbackDuration ?? 0) / 1000);
+    const progress = track.duration > 0 ? (playbackDuration / track.duration) * 35 : 0;
+    this.widget
+      ?.edit({
+        content: null,
+        embeds: [
+          {
+            title: track.title,
+            color: 39423,
+            description: track.url,
+            author: {
+              name: '🎵 Randobot Player 🎵',
+            },
+            fields: [
+              {
+                name: 'Статус',
+                value: loading ? 'Загрузка' : AudioPlayerStatuses[this.audioPlayer.state.status],
+                inline: true,
+              },
+              {
+                name: 'Трек',
+                value: this.queueIndex + 1 + '/' + this.queue.length,
+                inline: true,
+              },
+              {
+                name: 'Повтор',
+                value: ['-', '🔁 Повторяем плейлист', '🔂 Повторяем данную песню'][this.loop],
+                inline: true,
+              },
+              track.duration > 0
+                ? {
+                    name: this.durationToString(playbackDuration) + '/' + this.durationToString(track.duration),
+                    value: '[' + '▇'.repeat(progress) + '—'.repeat(35 - progress) + ']',
+                  }
+                : {
+                    name: this.durationToString(playbackDuration),
+                    value: '[Стрим]',
+                  },
+            ],
+            footer: {
+              text: '❌ - Выключить | ⏮ - Пред. | ⏯ - Пауза | ⏭ - След. | 🔀 - Перемешать | 🔁 - Повтор | ✂ - Вырезать трек | 💾 - Сохранить плейлист',
+            },
+          },
+        ],
+      })
+      .catch(e => console.error('widget update', e));
   }
   public playCurrentTrack(): Promise<boolean> {
     return new Promise(async r => {
@@ -187,7 +238,6 @@ export default class Player {
         await this.updateWidget({ loading: true });
         this.audioResource = await this.queue[this.queueIndex].createAudioResource();
         this.audioPlayer.play(this.audioResource);
-        await this.updateWidget({});
         r(true);
       } catch (error) {
         r(false);

@@ -57,8 +57,6 @@ const cmd: Command = {
         );
         member.guild.player!.queue = tracks;
         member.guild.player!.queueIndex = -1;
-        if (member.guild.player!.audioPlayer.state.status !== AudioPlayerStatus.Idle)
-          member.guild.player!.updateWidget({});
         member.guild.player!.processQueue();
       }
     } else {

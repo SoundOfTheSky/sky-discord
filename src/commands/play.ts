@@ -22,7 +22,7 @@ const cmd: Command = {
         ? data.interaction.editReply(msg)
         : data
             .msg!.reply(msg)
-            .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000))
+            .then(msg => setTimeout(() => msg.delete().catch(() => {}), 2500))
             .catch(() => {});
     if (!(member instanceof GuildMember)) {
       await answer('Мальчик, мы работаем только на сервере.');
@@ -33,7 +33,7 @@ const cmd: Command = {
       return false;
     }
     try {
-      const tracks = await Track.from(data.options[0], member.guild.preferences.youtubeCookies);
+      const tracks = await Track.from(data.options.join(' '), member.guild.preferences.youtubeCookies);
       if (tracks.length === 0) {
         await answer('Где ты эту ссылку взял?\nТы бы мне еще консервных банок приволок.');
         return false;
@@ -43,8 +43,6 @@ const cmd: Command = {
         await member.guild.player!.init();
       }
       member.guild.player!.queue.push(...tracks);
-      if (member.guild.player!.audioPlayer.state.status !== AudioPlayerStatus.Idle)
-        member.guild.player!.updateWidget({});
       member.guild.player!.processQueue();
     } catch (e) {
       await answer('' + e ?? 'Что-то пошло не так хз что отстаньте.');

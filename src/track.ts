@@ -8,6 +8,38 @@ export interface TrackData {
   duration: number;
   cookie?: string;
 }
+const qs = {
+  AUDIO_QUALITY_MEDIUM: 0,
+  AUDIO_QUALITY_LOW: 1,
+  undefined: 2,
+};
+const vqs = {
+  undefined: 0,
+  '144p': 1,
+  '144p 15fps': 2,
+  '144p60 HDR': 3,
+  '240p': 4,
+  '240p60 HDR': 5,
+  '270p': 6,
+  '360p': 7,
+  '360p60 HDR': 8,
+  '480p': 9,
+  '480p60 HDR': 10,
+  '720p': 11,
+  '720p60': 12,
+  '720p60 HDR': 13,
+  '1080p': 14,
+  '1080p60': 15,
+  '1080p60 HDR': 16,
+  '1440p': 17,
+  '1440p60': 18,
+  '1440p60 HDR': 19,
+  '2160p': 20,
+  '2160p60': 21,
+  '2160p60 HDR': 22,
+  '4320p': 23,
+  '4320p60': 24,
+};
 export class Track implements TrackData {
   public readonly url: string;
   public readonly title: string;
@@ -28,38 +60,6 @@ export class Track implements TrackData {
       },
     });
     let formats = info.formats.filter(f => f.hasAudio && (!info.videoDetails.isLiveContent || f.isHLS));
-    const qs = {
-      AUDIO_QUALITY_MEDIUM: 0,
-      AUDIO_QUALITY_LOW: 1,
-      undefined: 2,
-    };
-    const vqs = {
-      undefined: 0,
-      '144p': 1,
-      '144p 15fps': 2,
-      '144p60 HDR': 3,
-      '240p': 4,
-      '240p60 HDR': 5,
-      '270p': 6,
-      '360p': 7,
-      '360p60 HDR': 8,
-      '480p': 9,
-      '480p60 HDR': 10,
-      '720p': 11,
-      '720p60': 12,
-      '720p60 HDR': 13,
-      '1080p': 14,
-      '1080p60': 15,
-      '1080p60 HDR': 16,
-      '1440p': 17,
-      '1440p60': 18,
-      '1440p60 HDR': 19,
-      '2160p': 20,
-      '2160p60': 21,
-      '2160p60 HDR': 22,
-      '4320p': 23,
-      '4320p60': 24,
-    };
     const highestAudioQuality = formats.sort(
       (a, b) => qs[a.audioQuality as keyof typeof qs] - qs[b.audioQuality as keyof typeof qs],
     )[0].audioQuality;
@@ -79,7 +79,11 @@ export class Track implements TrackData {
     const ezURL = url.replace('www.', '').replace('http://', '').replace('https://', '');
     const tracks: Track[] = [];
     if (ezURL.startsWith('youtube.com/')) {
-      if (ezURL.startsWith('youtube.com/playlist') || ezURL.startsWith('youtube.com/channel')) {
+      if (
+        ezURL.startsWith('youtube.com/playlist') ||
+        ezURL.startsWith('youtube.com/channel') ||
+        ezURL.startsWith('youtube.com/c/')
+      ) {
         const playlist = await ytpl(url, {
           limit: Infinity,
         });
