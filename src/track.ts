@@ -94,7 +94,6 @@ export class Track implements TrackData {
             }),
           );
       } else {
-        //const info = await getYouTubeVideoInfo(youTubeVideoIdFromUrl(url));
         const info = await ytdl.getBasicInfo(url, {
           requestOptions: {
             headers: {
@@ -114,53 +113,4 @@ export class Track implements TrackData {
     }
     return tracks;
   }
-}
-export function youTubeVideoIdFromUrl(url: string) {
-  if (url.includes('youtu.be')) return url.slice(url.indexOf('.be/') + 4);
-  const andI = url.indexOf('&');
-  return url.slice(url.indexOf('v=') + 2, andI === -1 ? undefined : andI);
-}
-export function getYouTubeVideoInfo(id: string): Promise<{
-  title: string;
-  duration: number;
-}> {
-  return new Promise((r, j) => {
-    let body = '';
-    const req = https.request(
-      {
-        hostname: 'youtubei.googleapis.com',
-        path: '/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8',
-        method: 'POST',
-      },
-      res => {
-        res.on('data', d => (body += d));
-        res.once('end', () => {
-          const titleI = body.indexOf('tit') + 9;
-          const lengthI = body.indexOf('leng') + 17;
-          r({
-            title: body.slice(titleI, body.indexOf('",\n', titleI)),
-            duration: +body.slice(lengthI, body.indexOf('",\n', lengthI)),
-          });
-        });
-        res.on('error', j);
-      },
-    );
-    req.on('error', j);
-    req.write(
-      JSON.stringify({
-        context: {
-          client: {
-            hl: 'en',
-            clientName: 'WEB',
-            clientVersion: '2.20210721.00.00',
-            mainAppWebInfo: {
-              graftUrl: '/watch?v=' + id,
-            },
-          },
-        },
-        videoId: id,
-      }),
-    );
-    req.end();
-  });
 }
