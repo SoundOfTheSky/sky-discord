@@ -186,7 +186,7 @@ export default class Player {
   public async updateWidget({ loading }: { loading?: boolean }) {
     const track = this.queue[this.queueIndex];
     const playbackDuration = Math.floor((this.audioResource?.playbackDuration ?? 0) / 1000);
-    const progress = track.duration > 0 ? (playbackDuration / track.duration) * 35 : 0;
+    const progress = track.duration > 0 && !loading ? (playbackDuration / track.duration) * 35 : 0;
     this.widget
       ?.edit({
         content: null,

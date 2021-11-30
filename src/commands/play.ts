@@ -2,7 +2,6 @@ import { Command } from '../interfaces';
 import { GuildMember, TextChannel, VoiceChannel } from 'discord.js';
 import Player from '@/player';
 import { Track } from '@/track';
-import { AudioPlayerStatus } from '@discordjs/voice';
 const cmd: Command = {
   name: 'play',
   description: 'Запустить музяку',
@@ -44,8 +43,12 @@ const cmd: Command = {
       }
       member.guild.player!.queue.push(...tracks);
       member.guild.player!.processQueue();
-    } catch (e) {
-      await answer('' + e ?? 'Что-то пошло не так хз что отстаньте.');
+    } catch (e: any) {
+      await answer(
+        e.statusCode === 410
+          ? 'Похоже это видос в возрастным ограничением. Не могу его сыграть пока кто-то не установит мне куки из вашего ютуба.\nПример: /youtube-cookie here=is; your=cookies'
+          : '' + e || 'Что-то пошло не так хз что отстаньте.',
+      );
       return false;
     }
     return true;

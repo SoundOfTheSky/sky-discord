@@ -20,8 +20,6 @@ client.once('ready', async () => {
   for (const [, guild] of client.guilds.cache) {
     console.log('[LOADING] Guild: ' + guild.name);
     await guild.commands.set(Object.values(commands));
-    // for (const [, cmd] of guild.commands.cache) await cmd.delete();
-    // for (const cmd of Object.values(commands)) await guild.commands.create(cmd);
     await client.updateGuildPreferences(guild).catch(e => console.error(e));
   }
   client.on('interactionCreate', async interaction => {

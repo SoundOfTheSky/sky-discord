@@ -24,7 +24,7 @@ const cmd: Command = {
       data.options.length === 0 ||
       typeof data.options[0] !== 'string' ||
       data.options[0].length === 0 ||
-      data.options[0].length > 1024
+      data.options[0].length > 2048
     ) {
       await answer('Куки должен быть длиной от 1 до 1024 символов.');
       return false;
