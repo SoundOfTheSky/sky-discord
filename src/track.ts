@@ -70,7 +70,9 @@ export class Track implements TrackData {
     const stream = ytdl.downloadFromInfo(info, {
       format: formats[0],
       highWaterMark: 1 << 25,
+      liveBuffer: 4000,
     });
+    stream.on('error', e => console.log('stream error', e));
     const probe = await demuxProbe(stream);
     return createAudioResource(probe.stream, { metadata: this, inputType: probe.type });
   }

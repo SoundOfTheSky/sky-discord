@@ -150,10 +150,10 @@ export default class Player {
       }
     });
   public async destroy(reason?: string) {
+    clearInterval(this.widgetUpdateInterval!);
+    this.audioPlayer!.stop(true);
     this.queueLock = true;
     this.queue = [];
-    this.audioPlayer!.stop(true);
-    clearInterval(this.widgetUpdateInterval!);
     if (this.voiceConnection && this.voiceConnection.state.status !== VoiceConnectionStatus.Destroyed)
       this.voiceConnection.destroy();
     if (this.collector) this.collector.stop();
@@ -230,7 +230,7 @@ export default class Player {
           },
         ],
       })
-      .catch(e => console.error('widget update', e));
+      .catch(() => {});
   }
   public playCurrentTrack(): Promise<boolean> {
     return new Promise(async r => {
