@@ -1,5 +1,6 @@
 import {
   AudioPlayer,
+  AudioPlayerError,
   AudioPlayerStatus,
   AudioResource,
   createAudioPlayer,
@@ -33,26 +34,40 @@ export default class Player {
   private readyLock = false;
   private collector?: ReactionCollector;
   private widgetUpdateInterval?: NodeJS.Timer;
-
+  private consequentErrors = 0;
+  private dropConsequentErrorsTimer?: NodeJS.Timer;
   public constructor(guild: Guild, voiceChannel: VoiceChannel, textChannel?: TextChannel) {
     this.guild = guild;
     this.voiceChannel = voiceChannel;
     this.textChannel = textChannel;
     this.guild.player = this;
   }
+  private errorHandler(e: AudioPlayerError | Error) {
+    this.queueLock = true;
+    console.log((e as AudioPlayerError).resource ? 'Audio player error' : 'Stream error', e);
+    clearTimeout(this.dropConsequentErrorsTimer!);
+    this.consequentErrors++;
+    if (this.consequentErrors < 2 && (!this.audioResource || this.audioResource.playbackDuration < 5000))
+      this.playCurrentTrack();
+    else {
+      this.queueLock = false;
+      this.processQueue();
+    }
+
+    this.queueLock = false;
+  }
   public async init() {
     await this.initializeStableVoiceConnection();
     this.audioPlayer.on('stateChange', (oldState, newState) => {
       clearInterval(this.widgetUpdateInterval!);
       this.updateWidget({});
-      if (newState.status === AudioPlayerStatus.Playing)
+      if (newState.status === AudioPlayerStatus.Playing) {
         this.widgetUpdateInterval = setInterval(() => this.updateWidget({}), 2500);
+        this.dropConsequentErrorsTimer = setTimeout(() => (this.consequentErrors = 0), 60000);
+      }
       if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) this.processQueue();
     });
-    this.audioPlayer.on('error', e => {
-      console.log('audio player error', e);
-      this.next(true);
-    });
+    this.audioPlayer.on('error', this.errorHandler.bind(this));
     this.voiceConnection!.subscribe(this.audioPlayer);
 
     (async () => {
@@ -232,17 +247,15 @@ export default class Player {
       })
       .catch(() => {});
   }
-  public playCurrentTrack(): Promise<boolean> {
-    return new Promise(async r => {
-      try {
-        await this.updateWidget({ loading: true });
-        this.audioResource = await this.queue[this.queueIndex].createAudioResource();
-        this.audioPlayer.play(this.audioResource);
-        r(true);
-      } catch (error) {
-        r(false);
-      }
-    });
+  public async playCurrentTrack(begin?: number) {
+    try {
+      await this.updateWidget({ loading: true });
+      this.audioResource = await this.queue[this.queueIndex].createAudioResource(begin);
+      this.audioResource.playStream.on('error', this.errorHandler.bind(this));
+      this.audioPlayer.play(this.audioResource);
+    } catch (error) {
+      this.errorHandler(error as Error);
+    }
   }
   public async next(destroyOnEnd = false): Promise<void> {
     this.queueLock = true;
@@ -254,7 +267,7 @@ export default class Player {
         return;
       }
     } else this.queueIndex++;
-    if (!(await this.playCurrentTrack())) await this.next(true);
+    await this.playCurrentTrack();
     this.queueLock = false;
   }
   public async previous(destroyOnEnd = false): Promise<void> {
@@ -267,7 +280,7 @@ export default class Player {
         return;
       }
     } else this.queueIndex--;
-    if (!(await this.playCurrentTrack())) await this.previous(true);
+    await this.playCurrentTrack();
     this.queueLock = false;
   }
   public async removeCurrentSong() {
@@ -276,7 +289,7 @@ export default class Player {
     if (this.queue.length < 2) this.destroy('Была удалена последняя песня из плейлиста.');
     else {
       this.queue.splice(this.queueIndex, 1);
-      if (!(await this.playCurrentTrack())) await this.next(true);
+      await this.playCurrentTrack();
     }
     this.queueLock = false;
   }
@@ -288,11 +301,8 @@ export default class Player {
       if (this.loop === 0) return this.destroy('Последняя песня закончилась.');
       if (this.loop === 1) this.queueIndex = 0;
     }
-    if (await this.playCurrentTrack()) this.queueLock = false;
-    else {
-      this.queueLock = false;
-      return this.processQueue();
-    }
+    await this.playCurrentTrack();
+    this.queueLock = false;
   }
   public async savePlaylistDialog(user: User) {
     try {
