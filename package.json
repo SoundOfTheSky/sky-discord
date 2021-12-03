@@ -14,7 +14,7 @@
     "youtube-dl-exec": "latest",
     "ytdl-core": "latest",
     "ytpl": "latest",
-    "ytsr": "^3.5.3"
+    "ytsr": "latest"
   },
   "devDependencies": {
     "@types/express": "latest",

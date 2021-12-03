@@ -51,7 +51,7 @@ export class Track implements TrackData {
     this.duration = duration;
     this.cookie = cookie ?? '';
   }
-  public async createAudioResource(): Promise<AudioResource<Track>> {
+  public async createAudioResource(begin?: number): Promise<AudioResource<Track>> {
     const info = await ytdl.getInfo(this.url, {
       requestOptions: {
         headers: {
@@ -71,8 +71,8 @@ export class Track implements TrackData {
       format: formats[0],
       highWaterMark: 1 << 25,
       liveBuffer: 4000,
+      ...(begin && { begin }),
     });
-    stream.on('error', e => console.log('stream error', e));
     const probe = await demuxProbe(stream);
     return createAudioResource(probe.stream, { metadata: this, inputType: probe.type });
   }
