@@ -69,8 +69,8 @@ export class Track implements TrackData {
     if (formats.length === 0) throw new Error('No audio source');
     const stream = ytdl.downloadFromInfo(info, {
       format: formats[0],
-      highWaterMark: 1 << 25,
-      liveBuffer: 4000,
+      highWaterMark: 4194304,
+      liveBuffer: 2000,
       ...(begin && { begin }),
     });
     const probe = await demuxProbe(stream);

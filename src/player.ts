@@ -199,9 +199,11 @@ export default class Player {
     return Math.floor(duration / 60) + ':' + (sec < 10 ? '0' + sec : sec);
   }
   public async updateWidget({ loading }: { loading?: boolean }) {
+    if (!this.voiceConnection || this.voiceConnection.state.status === VoiceConnectionStatus.Destroyed) return;
     const track = this.queue[this.queueIndex];
     const playbackDuration = Math.floor((this.audioResource?.playbackDuration ?? 0) / 1000);
     const progress = track.duration > 0 && !loading ? (playbackDuration / track.duration) * 35 : 0;
+    if (progress > 35) return;
     this.widget
       ?.edit({
         content: null,
@@ -227,6 +229,11 @@ export default class Player {
               {
                 name: 'Повтор',
                 value: ['-', '🔁 Повторяем плейлист', '🔂 Повторяем данную песню'][this.loop],
+                inline: true,
+              },
+              {
+                name: 'Использовано памяти',
+                value: Math.floor(process.memoryUsage().rss / 1048576) + 'mb',
                 inline: true,
               },
               track.duration > 0
