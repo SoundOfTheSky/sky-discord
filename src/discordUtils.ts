@@ -69,10 +69,12 @@ async function setGuildPreferences(
       preferencesChannel = guild.channels.cache.find(
         c => c.type === 'GUILD_TEXT' && c.name === 'randobot-preferences',
       ) as TextChannel;
+    const text = JSON.stringify(preferences);
+    if (text.length > 200000) return;
+    guild.preferences = undefined;
     if (!msgs) msgs = await preferencesChannel.messages.fetch({ limit: 100 });
     for (const [, msg] of msgs) await msg.delete();
-    const text = JSON.stringify(preferences);
-    for (let i = 0; ; i++) {
+    for (let i = 0; i < 100; i++) {
       if (text.length <= i * 2000) break;
       await preferencesChannel.send(text.slice(i * 2000, (i + 1) * 2000));
     }
@@ -83,7 +85,6 @@ async function setGuildPreferences(
 }
 declare module 'discord.js' {
   export interface Client {
-    awaitingMessages?: ((msg: Message) => void)[];
     managerRequest: typeof managerRequest;
     parsePreferences: typeof parsePreferences;
     updateGuildPreferences: typeof updateGuildPreferences;
@@ -91,7 +92,7 @@ declare module 'discord.js' {
   }
   export interface Guild {
     player?: Player;
-    preferences: GuildPreferences;
+    preferences?: GuildPreferences;
   }
 }
 global.client.managerRequest = managerRequest;

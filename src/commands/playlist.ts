@@ -1,6 +1,5 @@
 import { Command } from '../interfaces';
 import { GuildMember, TextChannel, VoiceChannel } from 'discord.js';
-import { AudioPlayerStatus } from '@discordjs/voice';
 import Player from '@/player';
 import { Track } from '@/track';
 const cmd: Command = {
@@ -34,27 +33,27 @@ const cmd: Command = {
     }
     if (!data.options[0]) {
       await answer(
-        Object.keys(member.guild.preferences.playlists)
-          .map((p, i) => `${i + 1}. ${p} [${member.guild.preferences.playlists[p].length} треков]`)
+        Object.keys(member.guild.preferences!.playlists)
+          .map((p, i) => `${i + 1}. ${p} [${member.guild.preferences!.playlists[p].length} треков]`)
           .join('\n'),
       );
       return false;
-    } else if (data.options[0] in member.guild.preferences.playlists) {
+    } else if (data.options[0] in member.guild.preferences!.playlists) {
       if (data.options[1]) {
-        delete member.guild.preferences.playlists[data.options[0]];
-        await client.setGuildPreferences(member.guild, member.guild.preferences);
+        delete member.guild.preferences!.playlists[data.options[0]];
+        await client.setGuildPreferences(member.guild, member.guild.preferences!);
       } else {
         if (!(member.voice.channel instanceof VoiceChannel)) {
           await answer('Ало? Куда присоединяться? Сначала сам зайди в канал.');
           return false;
         }
+        const tracks = member.guild.preferences!.playlists[data.options[0]].map(
+          t => new Track({ ...t, cookie: member.guild.preferences!.youtubeCookies }),
+        );
         if (!member.guild.player || member.guild.player.voiceChannel.id !== member.voice.channel.id) {
           new Player(member.guild, member.voice.channel, textChannel);
           await member.guild.player!.init();
         }
-        const tracks = member.guild.preferences.playlists[data.options[0]].map(
-          t => new Track({ ...t, cookie: member.guild.preferences.youtubeCookies }),
-        );
         member.guild.player!.queue = tracks;
         member.guild.player!.queueIndex = -1;
         member.guild.player!.processQueue();

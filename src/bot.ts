@@ -24,19 +24,14 @@ client.once('ready', async () => {
   }
   client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand() || !interaction.guild) return;
-    if (!interaction.guild.preferences)
-      try {
-        await client.updateGuildPreferences(interaction.guild);
-      } catch {
-        interaction
-          .reply(
-            'I could not locate or create settings channel and shat myself.\nMaybe you need to give me admin rights... Who knows?',
-          )
-          .catch(() => {});
-        return;
-      }
+    if (!interaction.guild.preferences) {
+      interaction
+        .reply("Server's settings isn't loaded. Wait a little.\nOr maybe bot just shat himself.")
+        .catch(() => {});
+      return;
+    }
     const cmd = commands[interaction.commandName as keyof typeof commands];
-    if (!cmd || !interaction.guild) return;
+    if (!cmd) return;
     const options: any[] = cmd.options!.map(option =>
       interaction.options[
         ('get' + (option.type as string)[0] + (option.type as string).slice(1).toLowerCase()) as 'get'
@@ -56,17 +51,10 @@ client.once('ready', async () => {
   client.on('messageCreate', async msg => {
     try {
       if (msg.author.bot || msg.channel.type !== 'GUILD_TEXT') return;
-      if (!msg.guild!.preferences)
-        try {
-          await client.updateGuildPreferences(msg.guild!);
-        } catch {
-          msg
-            .reply(
-              'I could not locate or create settings channel and shat myself.\nMaybe you need to give me admin rights... Who knows?',
-            )
-            .catch(() => {});
-          return;
-        }
+      if (!msg.guild!.preferences) {
+        msg.reply("Server's settings isn't loaded. Wait a little.\nOr maybe bot just shat himself.").catch(() => {});
+        return;
+      }
       if (!msg.mentions.has(client.user!) && !msg.content.startsWith(msg.guild!.preferences.prefix)) return;
       const message = msg.content.slice(msg.content.indexOf(' ') + 1);
       const msgSplit = message.split(' ');

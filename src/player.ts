@@ -20,49 +20,85 @@ const AudioPlayerStatuses = {
   buffering: 'Загружаем',
 };
 export default class Player {
+  /**Guild in which player is playing sick beats, yo */
   public guild;
+  /**Voice channel in which player is playing sick beats, yo-yo */
   public voiceChannel;
+  /**Text channel in which player is showing sick widget. Yo? */
   public textChannel;
+  /**Player's widget */
   public widget?: Message;
+  /**Wow, suck a voice connection */
   public voiceConnection?: VoiceConnection;
+  /**Discord.js audio player */
   public audioPlayer: AudioPlayer = createAudioPlayer();
+  /**Queue of tracks */
   public queue: Track[] = [];
+  /**Index of current track in queue */
   public queueIndex = -1;
+  /**Discord.js audio resource */
   public audioResource?: AudioResource;
+  /**(Za)Looping mode:
+   *
+   * 0 - No lOOps
+   *
+   * 1 - lOOps for playling
+   *
+   * 2 - lOOps for current track
+   */
   private loop = 0;
+  /**If true will prevent auto-playing next song on player stop. */
   private queueLock = false;
+  /**False until voice connection is stable. */
   private readyLock = false;
+  /**Discord.js reaction collector for widget's buttons. */
   private collector?: ReactionCollector;
+  /**Here lies inteval for auto-updating widget. */
   private widgetUpdateInterval?: NodeJS.Timer;
+  /**How many errors happened.
+   *
+   * Resets to 0 if there was no errors for a last minute.
+   */
   private consequentErrors = 0;
+  /**Timer to reset errors to 0 after a minute */
   private dropConsequentErrorsTimer?: NodeJS.Timer;
+  /**If someone is saving playlist is true. Will block save playlist button. */
+  private savingPlaylist = false;
   public constructor(guild: Guild, voiceChannel: VoiceChannel, textChannel?: TextChannel) {
     this.guild = guild;
     this.voiceChannel = voiceChannel;
     this.textChannel = textChannel;
     this.guild.player = this;
   }
+  /**
+   * Happens if player/audio fails.
+   * Restarts song if played less than 5s. Have 3 retries.
+   * Otherwise go for next song.
+   */
   private errorHandler(e: AudioPlayerError | Error) {
     this.queueLock = true;
     console.log((e as AudioPlayerError).resource ? 'Audio player error' : 'Stream error', e);
     clearTimeout(this.dropConsequentErrorsTimer!);
     this.consequentErrors++;
-    if (this.consequentErrors < 2 && (!this.audioResource || this.audioResource.playbackDuration < 5000))
+    if (this.consequentErrors <= 3 && (!this.audioResource || this.audioResource.playbackDuration < 5000)) {
+      this.queueLock = false;
       this.playCurrentTrack();
-    else {
+    } else {
       this.queueLock = false;
       this.processQueue();
     }
-
-    this.queueLock = false;
   }
+  /**
+   * Connect to voice, create widget, create player,
+   * register error handling, init queue system.
+   */
   public async init() {
     await this.initializeStableVoiceConnection();
     this.audioPlayer.on('stateChange', (oldState, newState) => {
       clearInterval(this.widgetUpdateInterval!);
       this.updateWidget({});
       if (newState.status === AudioPlayerStatus.Playing) {
-        this.widgetUpdateInterval = setInterval(() => this.updateWidget({}), 2500);
+        this.widgetUpdateInterval = setInterval(() => this.updateWidget({}), 5000);
         this.dropConsequentErrorsTimer = setTimeout(() => (this.consequentErrors = 0), 60000);
       }
       if (newState.status === AudioPlayerStatus.Idle && oldState.status !== AudioPlayerStatus.Idle) this.processQueue();
@@ -117,6 +153,9 @@ export default class Player {
       }
     })();
   }
+  /**
+   * Create voice connection and make it as stable as it can.
+   */
   private initializeStableVoiceConnection: () => Promise<void> = () =>
     new Promise(async (r, j) => {
       try {
@@ -164,6 +203,9 @@ export default class Player {
         j(e);
       }
     });
+  /**
+   * Player will fucking explode the moment this method called.
+   */
   public async destroy(reason?: string) {
     clearInterval(this.widgetUpdateInterval!);
     this.audioPlayer!.stop(true);
@@ -181,10 +223,19 @@ export default class Player {
     }
     delete this.guild.player;
   }
+  /**
+   * yes it does toggle pause
+   */
   public togglePause() {
     if (this.audioPlayer.state.status === AudioPlayerStatus.Paused) this.audioPlayer.unpause();
     else if (this.audioPlayer.state.status === AudioPlayerStatus.Playing) this.audioPlayer.pause();
+    // DONT NEED TO DIRECTLY CALL WIDGET UPDATE.
+    // Player event will do it for us.
   }
+  /**
+   * Shuffle playlist with no turning back.
+   * Current track is now first track.
+   */
   public shuffle() {
     [this.queue[0], this.queue[this.queueIndex]] = [this.queue[this.queueIndex], this.queue[0]];
     for (let i = 1; i < this.queue.length; i++) {
@@ -192,18 +243,26 @@ export default class Player {
       [this.queue[i], this.queue[i2]] = [this.queue[i2], this.queue[i]];
     }
     this.queueIndex = 0;
-    if (this.audioPlayer.state.status !== AudioPlayerStatus.Playing) this.updateWidget({});
+    this.updateWidget({});
   }
+  /**
+   * Example: 160 -> "2:40"
+   */
   public durationToString(duration: number) {
     const sec = duration % 60;
     return Math.floor(duration / 60) + ':' + (sec < 10 ? '0' + sec : sec);
   }
+  /**
+   * Update widget. Calculates everything needed for it each time (performance danger).
+   */
   public async updateWidget({ loading }: { loading?: boolean }) {
     if (!this.voiceConnection || this.voiceConnection.state.status === VoiceConnectionStatus.Destroyed) return;
     const track = this.queue[this.queueIndex];
     const playbackDuration = Math.floor((this.audioResource?.playbackDuration ?? 0) / 1000);
-    const progress = track.duration > 0 && !loading ? (playbackDuration / track.duration) * 35 : 0;
-    if (progress > 35) return;
+    const progress =
+      track.duration > 0 && !loading && playbackDuration >= track.duration
+        ? (playbackDuration / track.duration) * 35
+        : 0;
     this.widget
       ?.edit({
         content: null,
@@ -254,9 +313,12 @@ export default class Player {
       })
       .catch(() => {});
   }
+  /**
+   * Create audio resource from current track, put error handler on it, and play it like a boss.
+   */
   public async playCurrentTrack(begin?: number) {
     try {
-      await this.updateWidget({ loading: true });
+      this.updateWidget({ loading: true });
       this.audioResource = await this.queue[this.queueIndex].createAudioResource(begin);
       this.audioResource.playStream.on('error', this.errorHandler.bind(this));
       this.audioPlayer.play(this.audioResource);
@@ -264,32 +326,35 @@ export default class Player {
       this.errorHandler(error as Error);
     }
   }
-  public async next(destroyOnEnd = false): Promise<void> {
+  /**
+   * Next track! Will do nothing if end of playlist. Or will loop if it's enabled.
+   */
+  public async next(): Promise<void> {
     this.queueLock = true;
     this.audioPlayer.stop();
     if (this.queueIndex === this.queue.length - 1) {
       if (this.loop === 1) this.queueIndex = 0;
-      else if (destroyOnEnd) {
-        this.destroy('Предыдущая песня сдохла, была пропущена и плейлист закончился.');
-        return;
-      }
     } else this.queueIndex++;
     await this.playCurrentTrack();
+    this.updateWidget({});
     this.queueLock = false;
   }
-  public async previous(destroyOnEnd = false): Promise<void> {
+  /**
+   * Previous track! Will do nothing if start of playlist. Or will loop if it's enabled.
+   */
+  public async previous(): Promise<void> {
     this.queueLock = true;
     this.audioPlayer.stop();
     if (this.queueIndex === 0) {
       if (this.loop === 1) this.queueIndex = this.queue.length - 1;
-      else if (destroyOnEnd) {
-        this.destroy('Предыдущая песня сдохла, была пропущена и плейлист закончился.');
-        return;
-      }
     } else this.queueIndex--;
     await this.playCurrentTrack();
+    this.updateWidget({});
     this.queueLock = false;
   }
+  /**
+   * Removes current song from playlist. Plays next song. If it was last song, destroy player.
+   */
   public async removeCurrentSong() {
     this.queueLock = true;
     this.audioPlayer.stop();
@@ -298,8 +363,12 @@ export default class Player {
       this.queue.splice(this.queueIndex, 1);
       await this.playCurrentTrack();
     }
+    this.updateWidget({});
     this.queueLock = false;
   }
+  /**
+   * Queue. Same as next() but will respect loop, have some queue safety checks, and destroy if last song ended.
+   */
   public async processQueue(): Promise<void> {
     if (this.queueLock || this.audioPlayer.state.status !== AudioPlayerStatus.Idle || this.queue.length === 0) return;
     this.queueLock = true;
@@ -311,37 +380,50 @@ export default class Player {
     await this.playCurrentTrack();
     this.queueLock = false;
   }
+  /**
+   * Ask user player, what name to give to current playlist and save it. Saving may take a lot of time.
+   *
+   * ASYNC CLUSTERFUCK
+   */
   public async savePlaylistDialog(user: User) {
     try {
+      if (this.savingPlaylist) return;
+      this.savingPlaylist = true;
       const msg = await this.textChannel!.send(
         user.toString() + ' Чтобы сохранить текущий плейлист, напиши его название.\n(У тебя 30 секунд)',
       );
+      const end = () => {
+        msg.delete().catch(() => {});
+        this.savingPlaylist = false;
+      };
       msg
         .awaitReactions({
           filter: (r, u) => r.emoji.name === '❌' && u.id === user.id,
           time: 30000,
           max: 1,
         })
-        .then(() => {
-          msg.delete().catch(() => {});
-        })
-        .catch(() => {
-          msg.delete().catch(() => {});
-        });
+        .then(end)
+        .catch(end);
       this.textChannel!.awaitMessages({ max: 1, time: 30000, filter: msg => msg.member?.user.id === user.id }).then(
         async messages => {
           const playlistMsg = messages.at(0);
-          if (msg.deleted) return;
+          if (msg.deleted) {
+            this.savingPlaylist = false;
+            return;
+          }
           msg.delete().catch(() => {});
-          if (!playlistMsg) return;
+          if (!playlistMsg) {
+            this.savingPlaylist = false;
+            return;
+          }
           if (
             playlistMsg.content.length > 0 &&
             playlistMsg.content.length <= 64 &&
             !playlistMsg.content.includes(' ')
           ) {
             try {
-              this.guild.preferences.playlists[playlistMsg.content] = [...this.queue];
-              await client.setGuildPreferences(this.guild, this.guild.preferences);
+              this.guild.preferences!.playlists[playlistMsg.content] = [...this.queue];
+              await client.setGuildPreferences(this.guild, this.guild.preferences!);
               playlistMsg.react('👌').catch(() => {});
             } catch {
               const m = await playlistMsg.reply('Не удалось сохранить плейлист.').catch(() => {});
@@ -353,6 +435,7 @@ export default class Player {
               .catch(() => {});
             setTimeout(() => m && m.delete().catch(() => {}), 5000);
           }
+          this.savingPlaylist = false;
           setTimeout(() => {
             playlistMsg.delete().catch(() => {});
           }, 5000);
