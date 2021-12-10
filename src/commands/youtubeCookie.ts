@@ -30,8 +30,8 @@ const cmd: Command = {
       return false;
     }
     try {
-      guild.preferences.youtubeCookies = data.options[0];
-      await client.setGuildPreferences(guild, guild.preferences);
+      guild.preferences!.youtubeCookies = data.options[0];
+      await client.setGuildPreferences(guild, guild.preferences!);
     } catch {
       await answer('Что-то пошло не так.');
       return false;

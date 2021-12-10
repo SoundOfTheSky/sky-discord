@@ -31,9 +31,9 @@ const cmd: Command = {
     }
     try {
       const member = await guild.members.fetch(client.user!);
-      await member.setNickname(data.options[0]);
-      member.guild.preferences.prefix = data.options[0];
-      await client.setGuildPreferences(guild, member.guild.preferences);
+      member.setNickname(data.options[0]);
+      member.guild.preferences!.prefix = data.options[0];
+      await client.setGuildPreferences(guild, member.guild.preferences!);
     } catch {
       await answer('Что-то пошло не так.');
       return false;
