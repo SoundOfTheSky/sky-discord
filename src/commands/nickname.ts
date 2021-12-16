@@ -1,17 +1,18 @@
 import { Command } from '../interfaces';
+import languages from '@/languages';
 const cmd: Command = {
   name: 'nickname',
-  description: 'Меняет ник и префикс бота.',
+  description: 'cmdNicknameDescription',
   options: [
     {
       name: 'name',
-      description: 'Новый ник',
+      description: 'cmdNicknameOptionName',
       type: 'STRING',
       required: true,
     },
   ],
   async handler(data) {
-    const guild = data.interaction ? data.interaction.guild : data.msg!.guild;
+    const guild = data.interaction ? data.interaction.guild! : data.msg!.guild!;
     const answer = (msg: string) =>
       data.interaction
         ? data.interaction.editReply(msg)
@@ -26,7 +27,7 @@ const cmd: Command = {
       data.options[0].length === 0 ||
       data.options[0].length > 64
     ) {
-      await answer('Ник должен быть длиной от 1 до 64 символов.');
+      await answer(languages[guild.preferences!.language].cmdNicknameErrorNick);
       return false;
     }
     try {
@@ -35,7 +36,7 @@ const cmd: Command = {
       member.guild.preferences!.prefix = data.options[0];
       await client.setGuildPreferences(guild, member.guild.preferences!);
     } catch {
-      await answer('Что-то пошло не так.');
+      await answer(languages[guild.preferences!.language].somethingWentWrong);
       return false;
     }
     return true;

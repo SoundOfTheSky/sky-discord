@@ -2,19 +2,20 @@ import { Command } from '../interfaces';
 import { GuildMember, TextChannel, VoiceChannel } from 'discord.js';
 import Player from '@/player';
 import { Track } from '@/track';
+import languages from '@/languages';
 const cmd: Command = {
   name: 'play',
-  description: 'Запустить музяку',
+  description: 'cmdPlayDescription',
   options: [
     {
       name: 'url',
-      description: 'Ссылка',
+      description: 'cmdPlayOptionURL',
       type: 'STRING',
       required: true,
     },
   ],
   async handler(data) {
-    const member = data.interaction ? data.interaction.member : data.msg!.member!;
+    const member = data.interaction ? (data.interaction.member as GuildMember) : data.msg!.member!;
     const textChannel = (data.interaction ? data.interaction.channel! : data.msg!.channel!) as TextChannel;
     const answer = (msg: string) =>
       data.interaction
@@ -23,18 +24,14 @@ const cmd: Command = {
             .msg!.reply(msg)
             .then(msg => setTimeout(() => msg.delete().catch(() => {}), 2500))
             .catch(() => {});
-    if (!(member instanceof GuildMember)) {
-      await answer('Мальчик, мы работаем только на сервере.');
-      return false;
-    }
     if (!(member.voice.channel instanceof VoiceChannel)) {
-      await answer('Ало? Куда присоединяться? Сначала сам зайди в канал.');
+      await answer(languages[member.guild.preferences!.language].cmdPlayErrorNoVoiceChannel);
       return false;
     }
     try {
       const tracks = await Track.from(data.options.join(' '), member.guild.preferences!.youtubeCookies);
       if (tracks.length === 0) {
-        await answer('Где ты эту ссылку взял?\nТы бы мне еще консервных банок приволок.');
+        await answer(languages[member.guild.preferences!.language].cmdPlayErrorNoVoiceChannel);
         return false;
       }
       if (!member.guild.player || member.guild.player.voiceChannel.id !== member.voice.channel.id) {
@@ -46,7 +43,7 @@ const cmd: Command = {
     } catch (e: any) {
       await answer(
         e.statusCode === 410
-          ? 'Похоже это видос в возрастным ограничением. Не могу его сыграть пока кто-то не установит мне куки из вашего ютуба.\nПример: /youtube-cookie here=is; your=cookies'
+          ? 'Похоже это видос в возрастным ограничением. Не могу его сыграть пока кто-то не установит мне куки из вашего ютуба.\nПример: /youtube-cookie here=are; your=cookies'
           : '' + e || 'Что-то пошло не так хз что отстаньте.',
       );
       return false;

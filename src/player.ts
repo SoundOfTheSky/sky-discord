@@ -319,7 +319,10 @@ export default class Player {
   public async playCurrentTrack(begin?: number) {
     try {
       this.updateWidget({ loading: true });
-      this.audioResource = await this.queue[this.queueIndex].createAudioResource(begin);
+      this.audioResource = await this.queue[this.queueIndex].createAudioResource(
+        this.guild.preferences?.youtubeCookies,
+        begin,
+      );
       this.audioResource.playStream.on('error', this.errorHandler.bind(this));
       this.audioPlayer.play(this.audioResource);
     } catch (error) {

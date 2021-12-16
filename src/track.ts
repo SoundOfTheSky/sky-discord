@@ -2,17 +2,19 @@ import ytpl from 'ytpl';
 import ytsr from 'ytsr';
 import { AudioResource, createAudioResource, demuxProbe } from '@discordjs/voice';
 import ytdl from 'ytdl-core';
+/**Track contains all info needed to play song */
 export interface TrackData {
   url: string;
   title: string;
   duration: number;
-  cookie?: string;
 }
+/**Audio quality preference (lower is more preferable) */
 const qs = {
   AUDIO_QUALITY_MEDIUM: 0,
   AUDIO_QUALITY_LOW: 1,
   undefined: 2,
 };
+/**Video quality preference (lower is more preferable) */
 const vqs = {
   undefined: 0,
   '144p': 1,
@@ -40,22 +42,22 @@ const vqs = {
   '4320p': 23,
   '4320p60': 24,
 };
+/**Track contains all info needed to play song */
 export class Track implements TrackData {
   public readonly url: string;
   public readonly title: string;
   public readonly duration: number;
-  public readonly cookie: string;
-  public constructor({ url, title, duration, cookie }: TrackData) {
+  public constructor({ url, title, duration }: TrackData) {
     this.url = url;
     this.title = title;
     this.duration = duration;
-    this.cookie = cookie ?? '';
   }
-  public async createAudioResource(begin?: number): Promise<AudioResource<Track>> {
+  /**Create audio resource from this track. Returns stream or throws an error. */
+  public async createAudioResource(cookie?: string, begin?: number): Promise<AudioResource<Track>> {
     const info = await ytdl.getInfo(this.url, {
       requestOptions: {
         headers: {
-          cookie: this.cookie,
+          ...(cookie && { cookie: cookie }),
         },
       },
     });
@@ -76,6 +78,7 @@ export class Track implements TrackData {
     const probe = await demuxProbe(stream);
     return createAudioResource(probe.stream, { metadata: this, inputType: probe.type });
   }
+  /**Create array of tracks from youtube url */
   public static async from(url: string, cookie = ''): Promise<Track[]> {
     url = url.replace('youtu.be/', 'youtube.com/watch?v=');
     const ezURL = url.replace('www.', '').replace('http://', '').replace('https://', '');
@@ -95,7 +98,6 @@ export class Track implements TrackData {
               title: item.title,
               url: item.shortUrl,
               duration: item.durationSec ?? 0,
-              cookie,
             }),
           );
       } else {
@@ -111,7 +113,6 @@ export class Track implements TrackData {
             title: info.videoDetails.title,
             duration: +info.videoDetails.lengthSeconds,
             url,
-            cookie,
           }),
         );
       }

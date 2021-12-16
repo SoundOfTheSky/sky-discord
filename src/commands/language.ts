@@ -1,17 +1,18 @@
 import { Command } from '../interfaces';
+import languages from '@/languages';
 const cmd: Command = {
-  name: 'youtube-cookie',
-  description: 'cmdYouTubeCookieDescription',
+  name: 'language',
+  description: 'cmdLanguageDescription',
   options: [
     {
-      name: 'cookies',
-      description: 'cmdYouTubeCookieOptionCookies',
+      name: 'lang',
+      description: 'cmdLanguageOptionLang',
       type: 'STRING',
       required: true,
     },
   ],
   async handler(data) {
-    const guild = data.interaction ? data.interaction.guild : data.msg!.guild;
+    const guild = data.interaction ? data.interaction.guild! : data.msg!.guild!;
     const answer = (msg: string) =>
       data.interaction
         ? data.interaction.editReply(msg)
@@ -20,20 +21,20 @@ const cmd: Command = {
             .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000))
             .catch(() => {});
     if (
-      !guild ||
       data.options.length === 0 ||
       typeof data.options[0] !== 'string' ||
       data.options[0].length === 0 ||
-      data.options[0].length > 2048
+      data.options[0].length > 16 ||
+      !(data.options[0] in languages)
     ) {
-      await answer('Куки должен быть длиной от 1 до 1024 символов.');
+      await answer('There are no such language.');
       return false;
     }
     try {
-      guild.preferences!.youtubeCookies = data.options[0];
+      guild.preferences!.language = data.options[0] as keyof typeof languages;
       await client.setGuildPreferences(guild, guild.preferences!);
     } catch {
-      await answer('Что-то пошло не так.');
+      await answer('Something went terribly wrong and the bot is shit.');
       return false;
     }
     return true;

@@ -1,0 +1,21 @@
+{
+  "flag": "🇺🇸",
+  "name": "english",
+  "localName": "English",
+  "somethingWentWrong": "Something went terribly wrong and the bot is shit.",
+  "cmdLanguageDescription": "Change bot's language",
+  "cmdLanguageOptionLang": "New language",
+  "cmdLeaveDescription": "Kick bot out of the voice channel",
+  "cmdNicknameDescription": "Change bot's nickname and prefix",
+  "cmdNicknameOptionName": "New nickname",
+  "cmdPlayDescription":"Play some sick beats",
+  "cmdPlayOptionURL":"URL or search query",
+  "cmdPlaylistDescription":"Play/view/delete playlist",
+  "cmdPlaylistOptionPlaylist":"Playlist",
+  "cmdPlaylistOptionDelete":"Delete playlist",
+  "cmdYouTubeCookieDescription":"Set your own youtube cookies. Allows you to play age or country restricted videos.",
+  "cmdYouTubeCookieOptionCookies":"Cockies (comedy finally achieved)",
+  "cmdNicknameErrorNick":"Nick must be a string 1-64 chars.",
+  "cmdPlayErrorNoVoiceChannel": "R U dumb? There do you think i will play music? Join voice channel first.",
+  "cmdPlayErrorShittyLink": "There did you get this link?\nI need an YouTube link!"
+}

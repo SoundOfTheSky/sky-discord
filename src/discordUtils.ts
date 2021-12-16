@@ -21,7 +21,12 @@ function parsePreferences(t: string): GuildPreferences | false {
   }
 }
 async function updateGuildPreferences(guild: Guild) {
-  const defaultPreferences = { prefix: guild.me?.displayName ?? 'randobot', playlists: {}, youtubeCookies: '' };
+  const defaultPreferences: GuildPreferences = {
+    prefix: guild.me?.displayName ?? 'randobot',
+    language: 'english',
+    playlists: {},
+    youtubeCookies: '',
+  };
   let preferencesChannel: TextChannel = guild.channels.cache.find(
     c => c.type === 'GUILD_TEXT' && c.name === 'randobot-preferences',
   ) as TextChannel;
@@ -51,9 +56,17 @@ async function updateGuildPreferences(guild: Guild) {
     : false;
   if (
     preferences === false ||
+    typeof preferences.prefix !== 'string' ||
     preferences.prefix.length === 0 ||
     preferences.prefix.length > 64 ||
-    typeof preferences.playlists !== 'object'
+    typeof preferences.playlists !== 'object' ||
+    Object.values(preferences.playlists).some(
+      p =>
+        !Array.isArray(p) ||
+        p.some(t => isNaN(t.duration) || t.duration < 0 || typeof t.title !== 'string' || typeof t.url !== 'string'),
+    ) ||
+    typeof preferences.youtubeCookies !== 'string' ||
+    typeof preferences.language !== 'string'
   )
     await setGuildPreferences(guild, defaultPreferences, preferencesChannel, msgs ? msgs : undefined);
   else guild.preferences = preferences as GuildPreferences;

@@ -1,4 +1,5 @@
 import Discord, { CategoryChannel, TextChannel, VoiceChannel } from 'discord.js';
+import languages from '@/languages';
 import commands from './commands';
 const client = new Discord.Client({
   intents: [
@@ -19,8 +20,10 @@ import './discordUtils';
 client.once('ready', async () => {
   for (const [, guild] of client.guilds.cache) {
     console.log('[LOADING] Guild: ' + guild.name);
-    await guild.commands.set(Object.values(commands));
     await client.updateGuildPreferences(guild).catch(e => console.error(e));
+    await guild.commands.set(
+      Object.values(commands).map(c => ({ ...c, description: languages[guild.preferences!.language][c.description] })),
+    );
   }
   client.on('interactionCreate', async interaction => {
     if (!interaction.isCommand() || !interaction.guild) return;

@@ -4,16 +4,16 @@ import Player from '@/player';
 import { Track } from '@/track';
 const cmd: Command = {
   name: 'playlist',
-  description: 'Запуск/просмотр/удаление плейлистов',
+  description: 'cmdPlaylistDescription',
   options: [
     {
-      name: 'paylist',
-      description: 'Плейлист',
+      name: 'playlist',
+      description: 'cmdPlaylistOptionPlaylist',
       type: 'STRING',
     },
     {
       name: 'delete',
-      description: 'Удалить плейлист вместо того чтобы запустить',
+      description: 'cmdPlaylistOptionDelete',
       type: 'BOOLEAN',
     },
   ],
@@ -47,9 +47,7 @@ const cmd: Command = {
           await answer('Ало? Куда присоединяться? Сначала сам зайди в канал.');
           return false;
         }
-        const tracks = member.guild.preferences!.playlists[data.options[0]].map(
-          t => new Track({ ...t, cookie: member.guild.preferences!.youtubeCookies }),
-        );
+        const tracks = member.guild.preferences!.playlists[data.options[0]].map(t => new Track(t));
         if (!member.guild.player || member.guild.player.voiceChannel.id !== member.voice.channel.id) {
           new Player(member.guild, member.voice.channel, textChannel);
           await member.guild.player!.init();

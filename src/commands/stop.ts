@@ -1,3 +1,4 @@
+import { Command } from '@/interfaces';
 import leave from './leave';
-const cmd = { ...leave, name: 'stop' };
+const cmd: Command = { ...leave, name: 'stop' };
 export default cmd;

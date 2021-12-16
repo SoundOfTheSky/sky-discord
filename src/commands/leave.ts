@@ -1,23 +1,11 @@
 import { Command } from '../interfaces';
-import { GuildMember } from 'discord.js';
 import { getVoiceConnection } from '@discordjs/voice';
 const cmd: Command = {
   name: 'leave',
-  description: 'Прогнать бота из канала',
+  description: 'cmdLeaveDescription',
   async handler(data) {
-    const member = data.interaction ? data.interaction.member : data.msg!.member!;
-    const answer = (msg: string) =>
-      data.interaction
-        ? data.interaction.editReply(msg)
-        : data
-            .msg!.reply(msg)
-            .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000))
-            .catch(() => {});
-    if (!(member instanceof GuildMember)) {
-      await answer('Мальчик, мы работаем только на сервере.');
-      return false;
-    }
-    getVoiceConnection(member.guild.id)?.destroy();
+    const guild = data.interaction ? data.interaction.guild! : data.msg!.guild!;
+    getVoiceConnection(guild.id)?.destroy();
     return true;
   },
 };
