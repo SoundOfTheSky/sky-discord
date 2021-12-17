@@ -12,12 +12,13 @@ import {
 } from '@discordjs/voice';
 import { Guild, Message, ReactionCollector, TextChannel, User, VoiceChannel } from 'discord.js';
 import type { Track } from './track';
+import languages from './languages';
 const AudioPlayerStatuses = {
-  autopaused: 'Остановлен',
-  paused: 'На паузе',
-  playing: 'Проигрываем',
-  idle: 'Ожидаем',
-  buffering: 'Загружаем',
+  autopaused: 'playerStatusAutopaused',
+  paused: 'playerStatusPaused',
+  playing: 'playerStatusPlaying',
+  idle: 'playerStatusIdle',
+  buffering: 'playerStatusBuffering',
 };
 export default class Player {
   /**Guild in which player is playing sick beats, yo */
@@ -109,7 +110,9 @@ export default class Player {
     (async () => {
       if (this.textChannel) {
         try {
-          this.widget = await this.textChannel.send('Создаем ахуенный плеер');
+          this.widget = await this.textChannel.send(
+            languages[this.guild.preferences?.language ?? 'english'].playerCreatingWidget,
+          );
           const buttons = {
             '❌': () => {
               this.destroy();
@@ -171,14 +174,14 @@ export default class Player {
                 await entersState(this.voiceConnection!, VoiceConnectionStatus.Connecting, 5000);
               } catch {
                 j();
-                this.destroy('Соединение наебнулось.');
+                this.destroy(languages[this.guild.preferences?.language ?? 'english'].playerVoiceConnectionError1);
               }
             } else if (this.voiceConnection!.rejoinAttempts < 5) {
               await new Promise(r => setTimeout(r, (this.voiceConnection!.rejoinAttempts + 1) * 5000));
               this.voiceConnection!.rejoin();
             } else {
               j();
-              this.destroy('Содинение наебнулось и не смогло разъебнуться.');
+              this.destroy(languages[this.guild.preferences?.language ?? 'english'].playerVoiceConnectionError2);
             }
           } else if (
             !this.readyLock &&
@@ -192,7 +195,7 @@ export default class Player {
             } catch {
               if (this.voiceConnection!.state.status !== VoiceConnectionStatus.Destroyed) {
                 j();
-                this.destroy('Не получилось установить соединение.');
+                this.destroy(languages[this.guild.preferences?.language ?? 'english'].playerVoiceConnectionError3);
               }
             } finally {
               this.readyLock = false;
@@ -216,7 +219,11 @@ export default class Player {
     if (this.collector) this.collector.stop();
     if (this.widget) {
       if (reason) {
-        await this.widget.edit('Плеер отключился по причине:\n' + reason).catch(() => {});
+        await this.widget
+          .edit(
+            languages[this.guild.preferences?.language ?? 'english'].playerDestroyReason.replace('{reason}', reason),
+          )
+          .catch(() => {});
         await new Promise(r => setTimeout(r, 10000));
       }
       this.widget.delete().catch(() => {});
@@ -263,6 +270,7 @@ export default class Player {
       track.duration > 0 && !loading && playbackDuration >= track.duration
         ? (playbackDuration / track.duration) * 35
         : 0;
+    const lang = languages[this.guild.preferences?.language ?? 'english'];
     this.widget
       ?.edit({
         content: null,
@@ -272,27 +280,24 @@ export default class Player {
             color: 39423,
             description: track.url,
             author: {
-              name: '🎵 Randobot Player 🎵',
+              name: lang.playerTitle,
             },
             fields: [
               {
-                name: 'Статус',
-                value: loading ? 'Загрузка' : AudioPlayerStatuses[this.audioPlayer.state.status],
+                name: lang.playerStatusTitle,
+                value: loading
+                  ? lang.playerStatusLoading
+                  : lang[AudioPlayerStatuses[this.audioPlayer.state.status] as keyof typeof languages.english],
                 inline: true,
               },
               {
-                name: 'Трек',
+                name: lang.playerTrackTitle,
                 value: this.queueIndex + 1 + '/' + this.queue.length,
                 inline: true,
               },
               {
-                name: 'Повтор',
-                value: ['-', '🔁 Повторяем плейлист', '🔂 Повторяем данную песню'][this.loop],
-                inline: true,
-              },
-              {
-                name: 'Использовано памяти',
-                value: Math.floor(process.memoryUsage().rss / 1048576) + 'mb',
+                name: lang.playerLoopTitle,
+                value: [lang.playerLoopMode1, lang.playerLoopMode2, lang.playerLoopMode3][this.loop],
                 inline: true,
               },
               track.duration > 0
@@ -302,11 +307,11 @@ export default class Player {
                   }
                 : {
                     name: this.durationToString(playbackDuration),
-                    value: '[Стрим]',
+                    value: lang.playerStreamTitle,
                   },
             ],
             footer: {
-              text: '❌ - Выключить | ⏮ - Пред. | ⏯ - Пауза | ⏭ - След. | 🔀 - Перемешать | 🔁 - Повтор | ✂ - Вырезать трек | 💾 - Сохранить плейлист',
+              text: lang.playerFooter,
             },
           },
         ],

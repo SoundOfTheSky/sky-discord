@@ -2,6 +2,7 @@ import { Command } from '../interfaces';
 import { GuildMember, TextChannel, VoiceChannel } from 'discord.js';
 import Player from '@/player';
 import { Track } from '@/track';
+import languages from '@/languages';
 const cmd: Command = {
   name: 'playlist',
   description: 'cmdPlaylistDescription',
@@ -18,7 +19,7 @@ const cmd: Command = {
     },
   ],
   async handler(data) {
-    const member = data.interaction ? data.interaction.member : data.msg!.member!;
+    const member = data.interaction ? (data.interaction.member as GuildMember) : data.msg!.member!;
     const answer = (msg: string) =>
       data.interaction
         ? data.interaction.editReply(msg)
@@ -27,14 +28,15 @@ const cmd: Command = {
             .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000))
             .catch(() => {});
     const textChannel = (data.interaction ? data.interaction.channel! : data.msg!.channel!) as TextChannel;
-    if (!(member instanceof GuildMember)) {
-      await answer('Мальчик, мы работаем только на сервере.');
-      return false;
-    }
     if (!data.options[0]) {
       await answer(
         Object.keys(member.guild.preferences!.playlists)
-          .map((p, i) => `${i + 1}. ${p} [${member.guild.preferences!.playlists[p].length} треков]`)
+          .map((p, i) =>
+            languages[member.guild.preferences!.language].cmdPlaylistAnswer
+              .replace('{number}', i + 1 + '')
+              .replace('{title}', p)
+              .replace('{amount}', member.guild.preferences!.playlists[p].length + ''),
+          )
           .join('\n'),
       );
       return false;
@@ -44,7 +46,7 @@ const cmd: Command = {
         await client.setGuildPreferences(member.guild, member.guild.preferences!);
       } else {
         if (!(member.voice.channel instanceof VoiceChannel)) {
-          await answer('Ало? Куда присоединяться? Сначала сам зайди в канал.');
+          await answer(languages[member.guild.preferences!.language].cmdPlayErrorNoVoiceChannel);
           return false;
         }
         const tracks = member.guild.preferences!.playlists[data.options[0]].map(t => new Track(t));
@@ -57,7 +59,7 @@ const cmd: Command = {
         member.guild.player!.processQueue();
       }
     } else {
-      await answer('Плейлиста с таким названием нету.');
+      await answer(languages[member.guild.preferences!.language].cmdPlaylistErrorNotFound);
       return false;
     }
     return true;

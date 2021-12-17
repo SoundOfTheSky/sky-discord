@@ -43,8 +43,8 @@ const cmd: Command = {
     } catch (e: any) {
       await answer(
         e.statusCode === 410
-          ? 'Похоже это видос в возрастным ограничением. Не могу его сыграть пока кто-то не установит мне куки из вашего ютуба.\nПример: /youtube-cookie here=are; your=cookies'
-          : '' + e || 'Что-то пошло не так хз что отстаньте.',
+          ? languages[member.guild.preferences!.language].cmdPlayErrorVideoIsNotAvailable
+          : '' + e || languages[member.guild.preferences!.language].somethingWentWrong,
       );
       return false;
     }

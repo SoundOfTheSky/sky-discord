@@ -1,4 +1,5 @@
 import { Command } from '../interfaces';
+import languages from '@/languages';
 const cmd: Command = {
   name: 'youtube-cookie',
   description: 'cmdYouTubeCookieDescription',
@@ -11,7 +12,7 @@ const cmd: Command = {
     },
   ],
   async handler(data) {
-    const guild = data.interaction ? data.interaction.guild : data.msg!.guild;
+    const guild = data.interaction ? data.interaction.guild! : data.msg!.guild!;
     const answer = (msg: string) =>
       data.interaction
         ? data.interaction.editReply(msg)
@@ -26,7 +27,12 @@ const cmd: Command = {
       data.options[0].length === 0 ||
       data.options[0].length > 2048
     ) {
-      await answer('Куки должен быть длиной от 1 до 1024 символов.');
+      await answer(languages[guild.preferences!.language].cmdYouTubeCookieError);
+      return false;
+    }
+    const splitCookie = data.options[0].split('; ');
+    if (splitCookie.length < 2 || splitCookie.some(c => c.split('=').length !== 2)) {
+      await answer(languages[guild.preferences!.language].cmdYouTubeCookieError);
       return false;
     }
     try {
