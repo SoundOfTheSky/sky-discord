@@ -95,7 +95,8 @@ export default class Player {
    */
   public async init() {
     await this.initializeStableVoiceConnection();
-    this.audioPlayer.on('stateChange', (oldState, newState) => {
+    this.audioPlayer.on('stateChange', oldState => {
+      const newState = this.audioPlayer.state;
       clearInterval(this.widgetUpdateInterval!);
       this.updateWidget({});
       if (newState.status === AudioPlayerStatus.Playing) {
@@ -131,7 +132,7 @@ export default class Player {
             },
             '🔁': () => {
               this.loop = (this.loop + 1) % 3;
-              if (this.audioPlayer.state.status !== AudioPlayerStatus.Playing) this.updateWidget({});
+              this.updateWidget({});
             },
             '✂': () => {
               this.removeCurrentSong();
@@ -167,7 +168,8 @@ export default class Player {
           channelId: this.voiceChannel.id,
           adapterCreator: this.guild.voiceAdapterCreator,
         });
-        this.voiceConnection.on('stateChange', async (oldState, newState) => {
+        this.voiceConnection.on('stateChange', async () => {
+          const newState = this.voiceConnection!.state;
           if (newState.status === VoiceConnectionStatus.Disconnected) {
             if (newState.reason === VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
               try {
@@ -266,10 +268,7 @@ export default class Player {
     if (!this.voiceConnection || this.voiceConnection.state.status === VoiceConnectionStatus.Destroyed) return;
     const track = this.queue[this.queueIndex];
     const playbackDuration = Math.floor((this.audioResource?.playbackDuration ?? 0) / 1000);
-    const progress =
-      track.duration > 0 && !loading && playbackDuration >= track.duration
-        ? (playbackDuration / track.duration) * 35
-        : 0;
+    const progress = track.duration > 0 && !loading ? (playbackDuration / track.duration) * 35 : 0;
     const lang = languages[this.guild.preferences?.language ?? 'english'];
     this.widget
       ?.edit({
@@ -397,9 +396,8 @@ export default class Player {
     try {
       if (this.savingPlaylist) return;
       this.savingPlaylist = true;
-      const msg = await this.textChannel!.send(
-        user.toString() + ' Чтобы сохранить текущий плейлист, напиши его название.\n(У тебя 30 секунд)',
-      );
+      const lang = languages[this.guild.preferences?.language ?? 'english'];
+      const msg = await this.textChannel!.send(user.toString() + ' ' + lang.playerPlaylistInstruction);
       const end = () => {
         msg.delete().catch(() => {});
         this.savingPlaylist = false;
@@ -415,10 +413,6 @@ export default class Player {
       this.textChannel!.awaitMessages({ max: 1, time: 30000, filter: msg => msg.member?.user.id === user.id }).then(
         async messages => {
           const playlistMsg = messages.at(0);
-          if (msg.deleted) {
-            this.savingPlaylist = false;
-            return;
-          }
           msg.delete().catch(() => {});
           if (!playlistMsg) {
             this.savingPlaylist = false;
@@ -430,17 +424,19 @@ export default class Player {
             !playlistMsg.content.includes(' ')
           ) {
             try {
-              this.guild.preferences!.playlists[playlistMsg.content] = [...this.queue];
+              this.guild.preferences!.playlists[playlistMsg.content] = this.queue.map(t => ({
+                duration: t.duration,
+                url: t.url,
+                title: t.title,
+              }));
               await client.setGuildPreferences(this.guild, this.guild.preferences!);
               playlistMsg.react('👌').catch(() => {});
             } catch {
-              const m = await playlistMsg.reply('Не удалось сохранить плейлист.').catch(() => {});
+              const m = await playlistMsg.reply(lang.playerPlaylistError).catch(() => {});
               setTimeout(() => m && m.delete().catch(() => {}), 5000);
             }
           } else {
-            const m = await playlistMsg
-              .reply('Плейлист не должен содержать пробелов и быть не больше 64 символов.')
-              .catch(() => {});
+            const m = await playlistMsg.reply(lang.playerPlaylistValidationError).catch(() => {});
             setTimeout(() => m && m.delete().catch(() => {}), 5000);
           }
           this.savingPlaylist = false;

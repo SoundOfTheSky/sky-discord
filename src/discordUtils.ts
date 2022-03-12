@@ -31,7 +31,7 @@ async function updateGuildPreferences(guild: Guild) {
     c => c.type === 'GUILD_TEXT' && c.name === 'randobot-preferences',
   ) as TextChannel;
   if (!preferencesChannel)
-    preferencesChannel = await guild.channels.create('randobot-preferences', {
+    preferencesChannel = (await guild.channels.create('randobot-preferences', {
       permissionOverwrites: [
         {
           type: 'role',
@@ -44,7 +44,7 @@ async function updateGuildPreferences(guild: Guild) {
           allow: [Permissions.FLAGS.VIEW_CHANNEL],
         },
       ],
-    });
+    })) as TextChannel;
   const msgs = await preferencesChannel.messages.fetch({ limit: 100 }).catch(() => {});
   const preferences = msgs
     ? parsePreferences(

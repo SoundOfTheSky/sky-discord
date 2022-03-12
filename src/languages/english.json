@@ -41,5 +41,8 @@
   "playerLoopMode2":"🔁 Repeating playlist",
   "playerLoopMode3":"🔂 Repeating current track",
   "playerStreamTitle":"[Stream]",
-  "playerFooter":"❌ - Turn off | ⏮ - Prev. | ⏯ - Pause | ⏭ - Next | 🔀 - Shuffle | 🔁 - Repeat | ✂ - Cut current track | 💾 - Save paylist"
+  "playerFooter":"❌ - Turn off | ⏮ - Prev. | ⏯ - Pause | ⏭ - Next | 🔀 - Shuffle | 🔁 - Repeat | ✂ - Cut current track | 💾 - Save paylist",
+  "playerPlaylistInstruction": "Write name of new playlist.\n(You have 30 seconds)",
+  "playerPlaylistError": "Error occured, while saving playlist.",
+  "playerPlaylistValidationError": "Playlist name must be less than 64 characters and contain no spaces."
 }

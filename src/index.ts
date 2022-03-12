@@ -1,12 +1,16 @@
 import { ShardingManager } from 'discord.js';
-import Express from 'express';
+import http from 'http';
 import dotenv from 'dotenv';
 dotenv.config();
-const express = Express();
-express.listen(process.env.PORT || 3000);
-express.get('', (req, res) => {
-  res.send('ok!');
+
+const server = http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end('OK');
 });
+server
+  .listen(process.env.PORT || 80)
+  .once('listening', () => console.log('Listening on port ' + (process.env.PORT || 80)));
+
 let manager: ShardingManager;
 async function main() {
   manager = new ShardingManager(__dirname + '/bot.js', {

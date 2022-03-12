@@ -28,10 +28,11 @@ const cmd: Command = {
       data.options[0].length > 2048
     ) {
       await answer(languages[guild.preferences!.language].cmdYouTubeCookieError);
+      console.log(2);
       return false;
     }
     const splitCookie = data.options[0].split('; ');
-    if (splitCookie.length < 2 || splitCookie.some(c => c.split('=').length !== 2)) {
+    if (splitCookie.length < 2 || splitCookie.some(c => !c.includes('='))) {
       await answer(languages[guild.preferences!.language].cmdYouTubeCookieError);
       return false;
     }
@@ -39,7 +40,7 @@ const cmd: Command = {
       guild.preferences!.youtubeCookies = data.options[0];
       await client.setGuildPreferences(guild, guild.preferences!);
     } catch {
-      await answer('Что-то пошло не так.');
+      await answer(languages.english.somethingWentWrong);
       return false;
     }
     return true;

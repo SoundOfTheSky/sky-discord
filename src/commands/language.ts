@@ -1,4 +1,4 @@
-import { Command } from '../interfaces';
+import { Command } from '@/interfaces';
 import languages from '@/languages';
 const cmd: Command = {
   name: 'language',

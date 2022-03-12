@@ -1,6 +1,6 @@
 import Discord, { CategoryChannel, TextChannel, VoiceChannel } from 'discord.js';
 import languages from '@/languages';
-import commands from './commands';
+import commands from '@/commands';
 const client = new Discord.Client({
   intents: [
     Discord.Intents.FLAGS.GUILDS,

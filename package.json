@@ -5,19 +5,20 @@
   "dependencies": {
     "@discordjs/opus": "latest",
     "@discordjs/voice": "latest",
+    "bufferutil": "latest",
     "discord.js": "latest",
     "dotenv": "latest",
-    "express": "latest",
+    "erlpack": "latest",
     "ffmpeg-static": "latest",
     "tslib": "latest",
     "tweetnacl": "latest",
-    "youtube-dl-exec": "latest",
+    "utf-8-validate": "latest",
     "ytdl-core": "latest",
     "ytpl": "latest",
-    "ytsr": "latest"
+    "ytsr": "latest",
+    "zlib-sync": "latest"
   },
   "devDependencies": {
-    "@types/express": "latest",
     "@types/node": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
