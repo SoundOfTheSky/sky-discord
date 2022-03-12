@@ -21,6 +21,7 @@
   "cmdPlayErrorVideoIsNotAvailable": "This video is age/country restricted. To play it you need to pass your YouTube cookies to the bot.\nExample: /youtube-cookie here=are; your=cookies\n\nWARNING\nAdmins can see what cookies you've set. Cookies can grant them access to your youtube account!",
   "cmdPlaylistAnswer":"{number}. {title} [{amount} tracks]",
   "cmdPlaylistErrorNotFound":"Playlist not found. I think firstly you should checkout out server's playlists.\n/playlist without arguments.",
+  "cmdPlaylistErrorNoPlaylists": "You haven't created any playlists yet.",
   "cmdYouTubeCookieError":"Hey, it doesn't look like 🍪COOKIES🍪!\nExample: /youtube-cookie VISITOR_INFO1_LIVE=XXXX-XXXXX; CONSENT=XX.XXXXXX; LOGIN_INFO=XXXXX.XXXXX:XXXX==; HSID=XXXX; SSID=XXXX; APISID=XXXXX/XXXXX; SAPISID=XXX_XXXX/XXXX; __Secure-1PAPISID=XXXX/XXXX; __Secure-3PAPISID=XXXX_XXXX/XXXX; PREF=XXXX; SID=XXXX; __Secure-1PSID=XXXX; __Secure-3PSID=XXXX; YSC=XXXX; SIDCC=XXXX; __Secure-3PSIDCC=XXXX",
   "playerStatusAutopaused":"Stopped",
   "playerStatusPaused":"Paused",

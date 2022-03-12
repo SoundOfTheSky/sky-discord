@@ -28,9 +28,11 @@ const cmd: Command = {
             .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000))
             .catch(() => {});
     const textChannel = (data.interaction ? data.interaction.channel! : data.msg!.channel!) as TextChannel;
+    const playlists = Object.keys(member.guild.preferences!.playlists);
     if (!data.options[0]) {
+      if(playlists.length)
       await answer(
-        Object.keys(member.guild.preferences!.playlists)
+        playlists
           .map((p, i) =>
             languages[member.guild.preferences!.language].cmdPlaylistAnswer
               .replace('{number}', i + 1 + '')
@@ -39,6 +41,7 @@ const cmd: Command = {
           )
           .join('\n'),
       );
+      else await answer(languages[member.guild.preferences!.language].cmdPlaylistErrorNoPlaylists);
       return false;
     } else if (data.options[0] in member.guild.preferences!.playlists) {
       if (data.options[1]) {

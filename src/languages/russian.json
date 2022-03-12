@@ -21,6 +21,7 @@
   "cmdPlayErrorVideoIsNotAvailable": "Похоже это видос недоступен или имеет возрастное ограничение. Чтобы его сыграть нужно установить куки из вашего ютуба.\nПример: /youtube-cookie here=are; your=cookies\n\nВНИМАНИЕ\nАдмины имеют доступ к установленным куки. Куки могут дать им доступ к вашему YouTube аккаунту!",
   "cmdPlaylistAnswer":"{number}. {title} [{amount} треков]",
   "cmdPlaylistErrorNotFound":"Плейлиста с таким названием нет. Хотя бы для приличия посмотри какие плейлисты есть на этом сервере.\n/playlist без ничего на конце.",
+  "cmdPlaylistErrorNoPlaylists": "А плейлистов-то нет! Сохрани сначала хоть один.",
   "cmdYouTubeCookieError":"Хей, это не похоже на 🍪ПЕЧЕНЬКИ🍪!\nПример: /youtube-cookie VISITOR_INFO1_LIVE=XXXX-XXXXX; CONSENT=XX.XXXXXX; LOGIN_INFO=XXXXX.XXXXX:XXXX==; HSID=XXXX; SSID=XXXX; APISID=XXXXX/XXXXX; SAPISID=XXX_XXXX/XXXX; __Secure-1PAPISID=XXXX/XXXX; __Secure-3PAPISID=XXXX_XXXX/XXXX; PREF=XXXX; SID=XXXX; __Secure-1PSID=XXXX; __Secure-3PSID=XXXX; YSC=XXXX; SIDCC=XXXX; __Secure-3PSIDCC=XXXX",
   "playerStatusAutopaused":"Остановлен",
   "playerStatusPaused":"На паузе",
