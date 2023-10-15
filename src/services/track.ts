@@ -1,47 +1,44 @@
+import { AudioResource, createAudioResource, demuxProbe } from '@discordjs/voice';
 import ytpl from 'ytpl';
 import ytsr from 'ytsr';
-import { AudioResource, createAudioResource, demuxProbe } from '@discordjs/voice';
 import ytdl from 'ytdl-core';
-/**Track contains all info needed to play song */
-export interface TrackData {
+
+/**Track contains all info needed to play a song */
+export type TrackData = {
   url: string;
   title: string;
   duration: number;
-}
+};
 /**Audio quality preference (lower is more preferable) */
-const qs = {
-  AUDIO_QUALITY_MEDIUM: 0,
-  AUDIO_QUALITY_LOW: 1,
-  undefined: 2,
-};
+const qs = ['AUDIO_QUALITY_MEDIUM', 'AUDIO_QUALITY_LOW', undefined];
 /**Video quality preference (lower is more preferable) */
-const vqs = {
-  undefined: 0,
-  '144p': 1,
-  '144p 15fps': 2,
-  '144p60 HDR': 3,
-  '240p': 4,
-  '240p60 HDR': 5,
-  '270p': 6,
-  '360p': 7,
-  '360p60 HDR': 8,
-  '480p': 9,
-  '480p60 HDR': 10,
-  '720p': 11,
-  '720p60': 12,
-  '720p60 HDR': 13,
-  '1080p': 14,
-  '1080p60': 15,
-  '1080p60 HDR': 16,
-  '1440p': 17,
-  '1440p60': 18,
-  '1440p60 HDR': 19,
-  '2160p': 20,
-  '2160p60': 21,
-  '2160p60 HDR': 22,
-  '4320p': 23,
-  '4320p60': 24,
-};
+const vqs = [
+  undefined,
+  '144p',
+  '144p 15fps',
+  '144p60 HDR',
+  '240p',
+  '240p60 HDR',
+  '270p',
+  '360p',
+  '360p60 HDR',
+  '480p',
+  '480p60 HDR',
+  '720p',
+  '720p60',
+  '720p60 HDR',
+  '1080p',
+  '1080p60',
+  '1080p60 HDR',
+  '1440p',
+  '1440p60',
+  '1440p60 HDR',
+  '2160p',
+  '2160p60',
+  '2160p60 HDR',
+  '4320p',
+  '4320p60',
+] as const;
 /**Track contains all info needed to play song */
 export class Track implements TrackData {
   public readonly url: string;
@@ -54,25 +51,27 @@ export class Track implements TrackData {
   }
   /**Create audio resource from this track. Returns stream or throws an error. */
   public async createAudioResource(cookie?: string, begin?: number): Promise<AudioResource<Track>> {
-    const info = await ytdl.getInfo(this.url, {
-      requestOptions: {
-        headers: {
-          ...(cookie && { cookie: cookie }),
-        },
+    const requestOptions = {
+      headers: {
+        ...(cookie && { cookie: cookie }),
       },
+    } as const;
+    const info = await ytdl.getInfo(this.url, {
+      requestOptions,
     });
-    let formats = info.formats.filter(f => f.hasAudio && (!info.videoDetails.isLiveContent || f.isHLS));
-    const highestAudioQuality = formats.sort(
-      (a, b) => qs[a.audioQuality as keyof typeof qs] - qs[b.audioQuality as keyof typeof qs],
-    )[0].audioQuality;
+    let formats = info.formats.filter((f) => f.hasAudio && (!info.videoDetails.isLiveContent || f.isHLS));
+    const highestAudioQuality = formats.sort((a, b) => qs.indexOf(a.audioQuality) - qs.indexOf(b.audioQuality))[0]
+      .audioQuality;
     formats = formats
-      .filter(f => f.audioQuality === highestAudioQuality)
-      .sort((a, b) => (b.hasVideo ? vqs[a.qualityLabel] - vqs[b.qualityLabel] : 1));
+      .filter((f) => f.audioQuality === highestAudioQuality)
+      .sort((a, b) => (b.hasVideo ? vqs.indexOf(a.qualityLabel) - vqs.indexOf(b.qualityLabel) : 1));
     if (formats.length === 0) throw new Error('No audio source');
+    console.log(`Playing`, formats[0].qualityLabel, formats[0].audioQuality);
     const stream = ytdl.downloadFromInfo(info, {
+      requestOptions,
       format: formats[0],
-      highWaterMark: 4194304,
-      liveBuffer: 2000,
+      highWaterMark: 1 << 25,
+      liveBuffer: 4000,
       ...(begin && { begin }),
     });
     const probe = await demuxProbe(stream);
@@ -80,6 +79,11 @@ export class Track implements TrackData {
   }
   /**Create array of tracks from youtube url */
   public static async from(url: string, cookie = ''): Promise<Track[]> {
+    const requestOptions = {
+      headers: {
+        ...(cookie && { cookie: cookie }),
+      },
+    } as const;
     url = url.replace('youtu.be/', 'youtube.com/watch?v=');
     const ezURL = url.replace('www.', '').replace('http://', '').replace('https://', '');
     const tracks: Track[] = [];
@@ -90,6 +94,7 @@ export class Track implements TrackData {
         ezURL.startsWith('youtube.com/c/')
       ) {
         const playlist = await ytpl(url, {
+          requestOptions,
           limit: Infinity,
         });
         for (const item of playlist.items)
@@ -102,11 +107,7 @@ export class Track implements TrackData {
           );
       } else {
         const info = await ytdl.getBasicInfo(url, {
-          requestOptions: {
-            headers: {
-              cookie,
-            },
-          },
+          requestOptions,
         });
         tracks.push(
           new Track({
@@ -119,13 +120,9 @@ export class Track implements TrackData {
     } else {
       const results = await ytsr(url, {
         limit: 3,
-        requestOptions: {
-          headers: {
-            cookie,
-          },
-        },
+        requestOptions,
       });
-      const result = results.items.find(i => i.type === 'channel' || i.type === 'playlist' || i.type === 'video');
+      const result = results.items.find((i) => i.type === 'channel' || i.type === 'playlist' || i.type === 'video');
       if (result) tracks.push(...(await this.from((result as ytsr.Video).url)));
     }
     return tracks;

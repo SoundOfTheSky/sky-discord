@@ -1,71 +1,46 @@
-import { Command } from '../interfaces';
-import { GuildMember, TextChannel, VoiceChannel } from 'discord.js';
-import Player from '@/player';
-import { Track } from '@/track';
-import languages from '@/languages';
-const cmd: Command = {
+import { ApplicationCommandOptionType, GuildMember, VoiceChannel } from 'discord.js';
+import { Command } from './index.js';
+import { loadPreferences } from '../services/guilds.js';
+import languages from '../assets/languages/index.js';
+import { Track } from '../services/track.js';
+import Player, { guildPlayers } from '../player.js';
+
+export default {
   name: 'playlist',
   description: 'cmdPlaylistDescription',
   options: [
     {
       name: 'playlist',
       description: 'cmdPlaylistOptionPlaylist',
-      type: 'STRING',
-    },
-    {
-      name: 'delete',
-      description: 'cmdPlaylistOptionDelete',
-      type: 'BOOLEAN',
+      type: ApplicationCommandOptionType.String,
     },
   ],
-  async handler(data) {
-    const member = data.interaction ? (data.interaction.member as GuildMember) : data.msg!.member!;
-    const answer = (msg: string) =>
-      data.interaction
-        ? data.interaction.editReply(msg)
-        : data
-            .msg!.reply(msg)
-            .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000))
-            .catch(() => {});
-    const textChannel = (data.interaction ? data.interaction.channel! : data.msg!.channel!) as TextChannel;
-    const playlists = Object.keys(member.guild.preferences!.playlists);
-    if (!data.options[0]) {
-      if(playlists.length)
-      await answer(
-        playlists
-          .map((p, i) =>
-            languages[member.guild.preferences!.language].cmdPlaylistAnswer
-              .replace('{number}', i + 1 + '')
-              .replace('{title}', p)
-              .replace('{amount}', member.guild.preferences!.playlists[p].length + ''),
-          )
-          .join('\n'),
-      );
-      else await answer(languages[member.guild.preferences!.language].cmdPlaylistErrorNoPlaylists);
-      return false;
-    } else if (data.options[0] in member.guild.preferences!.playlists) {
-      if (data.options[1]) {
-        delete member.guild.preferences!.playlists[data.options[0]];
-        await client.setGuildPreferences(member.guild, member.guild.preferences!);
-      } else {
-        if (!(member.voice.channel instanceof VoiceChannel)) {
-          await answer(languages[member.guild.preferences!.language].cmdPlayErrorNoVoiceChannel);
-          return false;
-        }
-        const tracks = member.guild.preferences!.playlists[data.options[0]].map(t => new Track(t));
-        if (!member.guild.player || member.guild.player.voiceChannel.id !== member.voice.channel.id) {
-          new Player(member.guild, member.voice.channel, textChannel);
-          await member.guild.player!.init();
-        }
-        member.guild.player!.queue = tracks;
-        member.guild.player!.queueIndex = -1;
-        member.guild.player!.processQueue();
-      }
-    } else {
-      await answer(languages[member.guild.preferences!.language].cmdPlaylistErrorNotFound);
-      return false;
+  async handler(interaction, playlistName) {
+    const textChannel = interaction.channel!;
+    const preferences = loadPreferences(interaction.guildId!)!;
+    const playlists = Object.keys(preferences.playlists ?? {});
+    const member = interaction.member as GuildMember;
+    if (!preferences.playlists || playlists.length === 0)
+      return languages[preferences.language].cmdPlaylistErrorNoPlaylists;
+    if (!playlistName) {
+      return playlists
+        .map((p, i) =>
+          languages[preferences.language].cmdPlaylistAnswer
+            .replace('{number}', i + 1 + '')
+            .replace('{title}', p)
+            .replace('{amount}', preferences.playlists![p].length + ''),
+        )
+        .join('\n');
+    } else if (playlistName in preferences.playlists) {
+      if (!(member.voice.channel instanceof VoiceChannel))
+        return languages[preferences.language].cmdPlayErrorNoVoiceChannel;
+      const tracks = preferences.playlists[playlistName].map((t) => new Track(t));
+      let player = guildPlayers.get(member.guild.id);
+      if (!player) player = await new Player(member.guild, preferences, member.voice.channel, textChannel).init();
+      player.queue = tracks;
+      player.queueIndex = -1;
+      await player.processQueue();
     }
-    return true;
+    return languages[preferences.language].cmdPlaylistErrorNotFound;
   },
-};
-export default cmd;
+} as Command<[string | undefined]>;

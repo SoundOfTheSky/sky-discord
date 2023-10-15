@@ -2,40 +2,40 @@
   "name": "sky-discord",
   "version": "1.0.0",
   "license": "MIT",
+  "type": "module",
   "dependencies": {
-    "@discordjs/opus": "latest",
-    "@discordjs/voice": "latest",
-    "bufferutil": "latest",
-    "discord.js": "latest",
-    "dotenv": "latest",
-    "erlpack": "latest",
-    "ffmpeg-static": "latest",
-    "tslib": "latest",
-    "tweetnacl": "latest",
-    "utf-8-validate": "latest",
-    "ytdl-core": "latest",
-    "ytpl": "latest",
-    "ytsr": "latest",
-    "zlib-sync": "latest"
+    "@discordjs/opus": "^0.9.0",
+    "@discordjs/voice": "^0.16.0",
+    "bufferutil": "^4.0.7",
+    "discord.js": "^14.13.0",
+    "dotenv": "^16.3.1",
+    "ffmpeg-static": "^5.2.0",
+    "mime-types": "^2.1.35",
+    "sodium-native": "^4.0.4",
+    "utf-8-validate": "^6.0.3",
+    "ytdl-core": "^4.11.5",
+    "ytpl": "^2.3.0",
+    "ytsr": "^3.8.4",
+    "zlib-sync": "^0.1.8"
   },
   "devDependencies": {
-    "@types/node": "latest",
+    "@types/mime-types": "^2.1.2",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
+    "bun-types": "latest",
     "eslint": "latest",
     "eslint-config-prettier": "latest",
     "eslint-plugin-prettier": "latest",
+    "eslint-plugin-sonarjs": "latest",
     "prettier": "latest",
     "typescript": "latest"
   },
+  "trustedDependencies": [],
   "scripts": {
-    "lint": "prettier -c \"**/*{.js,.json,.ts}\" && eslint \"src/**/*{.js,.ts}\"",
-    "lint:fix": "prettier -w \"**/*{.js,.json,.ts}\" && eslint \"src/**/*{.js,.ts}\" --fix",
-    "dev": "node scripts/dev",
-    "build": "node scripts/build",
-    "start": "node dist"
-  },
-  "engines": {
-    "node": "16.x"
+    "build": "bun build ./src/index.ts --outfile=dist.js --target=node",
+    "buildts": "tsc",
+    "start": "bun src/index.ts",
+    "dev": "bun run buildts && node dist",
+    "lint": "eslint \"src/**/*{.js,.ts}\" --fix"
   }
 }

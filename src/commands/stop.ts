@@ -1,4 +1,2 @@
-import { Command } from '@/interfaces';
-import leave from './leave';
-const cmd: Command = { ...leave, name: 'stop' };
-export default cmd;
+import leave from './leave.js';
+export default { ...leave, name: 'stop' } as typeof leave;

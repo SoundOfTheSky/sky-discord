@@ -1,49 +1,26 @@
-import { Command } from '../interfaces';
-import languages from '@/languages';
-const cmd: Command = {
+import { ApplicationCommandOptionType } from 'discord.js';
+import languages from '../assets/languages/index.js';
+import { Command } from './index.js';
+import { loadPreferences, savePreferences } from '../services/guilds.js';
+
+export default {
   name: 'youtube-cookie',
   description: 'cmdYouTubeCookieDescription',
   options: [
     {
       name: 'cookies',
       description: 'cmdYouTubeCookieOptionCookies',
-      type: 'STRING',
+      type: ApplicationCommandOptionType.String,
       required: true,
     },
   ],
-  async handler(data) {
-    const guild = data.interaction ? data.interaction.guild! : data.msg!.guild!;
-    const answer = (msg: string) =>
-      data.interaction
-        ? data.interaction.editReply(msg)
-        : data
-            .msg!.reply(msg)
-            .then(msg => setTimeout(() => msg.delete().catch(() => {}), 5000))
-            .catch(() => {});
-    if (
-      !guild ||
-      data.options.length === 0 ||
-      typeof data.options[0] !== 'string' ||
-      data.options[0].length === 0 ||
-      data.options[0].length > 2048
-    ) {
-      await answer(languages[guild.preferences!.language].cmdYouTubeCookieError);
-      console.log(2);
-      return false;
-    }
-    const splitCookie = data.options[0].split('; ');
-    if (splitCookie.length < 2 || splitCookie.some(c => !c.includes('='))) {
-      await answer(languages[guild.preferences!.language].cmdYouTubeCookieError);
-      return false;
-    }
-    try {
-      guild.preferences!.youtubeCookies = data.options[0];
-      await client.setGuildPreferences(guild, guild.preferences!);
-    } catch {
-      await answer(languages.english.somethingWentWrong);
-      return false;
-    }
-    return true;
+  handler(interaction, cookies) {
+    const preferences = loadPreferences(interaction.guildId!)!;
+    if (cookies.length === 0 || cookies.length > 4096) return languages[preferences.language].cmdYouTubeCookieError;
+    const splitCookie = cookies.split('; ');
+    if (splitCookie.length < 2 || splitCookie.some((c) => !c.includes('=') || c.includes(':')))
+      return languages[preferences.language].cmdYouTubeCookieError;
+    preferences.youtubeCookies = cookies;
+    savePreferences(preferences);
   },
-};
-export default cmd;
+} as Command<[string]>;
